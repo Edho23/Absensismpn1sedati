@@ -20,8 +20,9 @@
                href="{{ route('absensi.index') }}">Input manual</a></li>
         <li><a class="submenu-link"
                href="{{ route('absensi.index') }}?mode=edit">Edit data</a></li>
-        <li><a class="submenu-link"
-               href="{{ route('absensi.index') }}?mode=log">Log</a></li>
+        <li><a class="submenu-link {{ request()->routeIs('absensi.log') ? 'active' : '' }}"
+               href="{{ route('absensi.log') }}">Log</a></li>
+
       </ul>
     </li>
 

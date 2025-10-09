@@ -3,62 +3,76 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Siswa;
+use App\Models\Kelas;
 
 class SiswaController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Tampilkan daftar siswa
      */
     public function index()
     {
-        //
+        $siswa = Siswa::with('kelas')->orderBy('nama', 'asc')->paginate(10);
+        $kelas = Kelas::orderBy('nama_kelas', 'asc')->get();
+
+        return view('siswa.index', compact('siswa', 'kelas'));
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
+     * Simpan siswa baru
      */
     public function store(Request $request)
     {
-        //
+        $data = $request->validate([
+            'nama' => 'required|string|max:100',
+            'nis' => 'required|string|max:50|unique:siswa,nis',
+            'id_kelas' => 'required|exists:kelas,id',
+            'status_aktif' => 'required|boolean',
+        ]);
+
+        Siswa::create($data);
+
+        return redirect()->route('siswa.index')->with('ok', 'Siswa baru berhasil ditambahkan.');
     }
 
     /**
-     * Display the specified resource.
+     * Tampilkan form edit siswa
      */
-    public function show(string $id)
+    public function edit($id)
     {
-        //
+        $siswa = Siswa::findOrFail($id);
+        $kelas = Kelas::orderBy('nama_kelas', 'asc')->get();
+
+        return view('siswa.edit', compact('siswa', 'kelas'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Update data siswa
      */
-    public function edit(string $id)
+    public function update(Request $request, $id)
     {
-        //
+        $data = $request->validate([
+            'nama' => 'required|string|max:100',
+            'nis' => 'required|string|max:50|unique:siswa,nis,' . $id,
+            'id_kelas' => 'required|exists:kelas,id',
+            'status_aktif' => 'required|boolean',
+        ]);
+
+        $siswa = Siswa::findOrFail($id);
+        $siswa->update($data);
+
+        return redirect()->route('siswa.index')->with('ok', 'Data siswa berhasil diperbarui.');
     }
 
     /**
-     * Update the specified resource in storage.
+     * Hapus siswa
      */
-    public function update(Request $request, string $id)
+    public function destroy($id)
     {
-        //
-    }
+        $siswa = Siswa::findOrFail($id);
+        $siswa->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('siswa.index')->with('ok', 'Siswa berhasil dihapus.');
     }
 }

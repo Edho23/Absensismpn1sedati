@@ -6,59 +6,24 @@ use Illuminate\Http\Request;
 
 class KartuController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        // nanti data kartu bisa diambil dari model, untuk sekarang dummy dulu
+        $kartu = [
+            ['id' => 1, 'uid' => 'RFID-00123', 'nama_siswa' => 'Yogi Aditya', 'status' => 'Aktif'],
+            ['id' => 2, 'uid' => 'RFID-00456', 'nama_siswa' => 'Dimas Arif', 'status' => 'Nonaktif'],
+        ];
+
+        return view('kartu.index', compact('kartu'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        // nanti diisi backend insert kartu RFID
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function destroy($id)
     {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        // nanti diisi backend delete kartu RFID
     }
 }
