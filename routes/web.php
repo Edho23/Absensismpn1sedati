@@ -30,12 +30,16 @@ Route::middleware('web')->group(function () {
     // Halaman utama absensi (Input Manual + Tabel Hari Ini)
     Route::get('/absensi', [AbsensiController::class, 'index'])->name('absensi.index');
 
+    Route::get('/absensi/edit', [AbsensiController::class, 'edit'])->name('absensi.edit');
+    
     // Proses simpan input manual
     Route::post('/absensi/manual', [AbsensiController::class, 'storeManual'])->name('absensi.manual');
-
+    Route::get('/absensi/input', [AbsensiController::class, 'index'])->name('absensi.input');
     // Proses untuk update & hapus
     Route::post('/absensi/{id}/update', [AbsensiController::class, 'update'])->name('absensi.update');
     Route::delete('/absensi/{id}', [AbsensiController::class, 'destroy'])->name('absensi.destroy');
+
+
 
 
     // ============================
@@ -66,7 +70,7 @@ Route::middleware('web')->group(function () {
 
 
     // ============================
-    // ⚙️ PENGATURAN
+    // ⚙ PENGATURAN
     // ============================
     Route::get('/pengaturan', [PengaturanController::class, 'index'])->name('pengaturan.index');
     Route::post('/pengaturan', [PengaturanController::class, 'update'])->name('pengaturan.update');

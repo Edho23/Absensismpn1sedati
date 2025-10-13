@@ -2,7 +2,7 @@
 @section('title','Dashboard')
 @section('content')
   <h1 class="page-title">Dashboard</h1>
-  <p class="page-sub">Selamat datang di Sistem Absensi SMPN 1 Sedati</p>
+  <p class="page-sub">Selamat datang di Sistem Presensi SMPN 1 Sedati</p>
 
   <div class="cards">
     <div class="card"><div class="card-title">Jumlah Siswa</div><div class="card-value">{{ $cards['siswa'] }}</div></div>

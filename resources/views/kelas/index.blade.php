@@ -1,17 +1,16 @@
 @extends('layouts.app')
 
-@section('title', 'Data Kelas')
+@section('title', 'Manajemen Data Kelas')
 
 @section('content')
 <div class="container-fluid px-4 py-3">
+
+    {{-- HEADER --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold mb-0 text-primary">🏫 Manajemen Data Kelas</h3>
-        <button class="btn btn-success rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#tambahModal">
-            ➕ Tambah Kelas
-        </button>
+        <h3 class="fw-bold text-primary mb-0">🏫 Manajemen Data Kelas</h3>
     </div>
 
-    {{-- Alert sukses --}}
+    {{-- ALERT --}}
     @if(session('ok'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('ok') }}
@@ -19,15 +18,57 @@
         </div>
     @endif
 
+    {{-- ================== FORM TAMBAH KELAS ================== --}}
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body pb-2">
+            <h6 class="fw-semibold text-secondary mb-3">Tambah Kelas Baru</h6>
+
+            <form action="{{ route('kelas.store') }}" method="POST" class="row g-3 align-items-end">
+                @csrf
+                {{-- Nama Kelas --}}
+                <div class="col-md-5">
+                    <label class="form-label small fw-semibold text-secondary">Nama Kelas</label>
+                    <div class="input-group input-group-lg shadow-sm rounded-pill">
+                        <span class="input-group-text bg-white border-0 ps-3">
+                            <i class="bi bi-building text-primary"></i>
+                        </span>
+                        <input type="text" name="nama_kelas" class="form-control border-0 rounded-end-pill"
+                               placeholder="Contoh: IX-A" required>
+                    </div>
+                </div>
+
+                {{-- Wali Kelas --}}
+                <div class="col-md-5">
+                    <label class="form-label small fw-semibold text-secondary">Wali Kelas</label>
+                    <div class="input-group input-group-lg shadow-sm rounded-pill">
+                        <span class="input-group-text bg-white border-0 ps-3">
+                            <i class="bi bi-person-badge text-success"></i>
+                        </span>
+                        <input type="text" name="wali_kelas" class="form-control border-0 rounded-end-pill"
+                               placeholder="Contoh: Pak Budi" required>
+                    </div>
+                </div>
+
+                {{-- Tombol Simpan --}}
+                <div class="col-md-2 text-end">
+                    <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm px-4 mt-2">
+                        <i class="bi bi-plus-circle"></i> Tambah
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     {{-- ================== TABEL KELAS ================== --}}
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-header bg-white border-0 py-3 px-4">
             <h6 class="fw-semibold text-secondary mb-0">Daftar Kelas</h6>
         </div>
-        <div class="card-body px-4 pb-4">
+
+        <div class="card-body px-4 pb-3">
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light text-center">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-center small">
                         <tr>
                             <th>No</th>
                             <th>Nama Kelas</th>
@@ -35,144 +76,93 @@
                             <th>Aksi</th>
                         </tr>
                     </thead>
-                    <tbody class="text-center">
-                        {{-- Contoh data dummy (nanti diganti dari backend) --}}
-                        <tr>
-                            <td>1</td>
-                            <td>VII-A</td>
-                            <td>Bu Rina</td>
-                            <td>
-                                <button class="btn btn-sm btn-warning rounded-pill px-3 me-1" data-bs-toggle="modal" data-bs-target="#editModal">
-                                    ✏️ Edit
-                                </button>
-                                <button class="btn btn-sm btn-danger rounded-pill px-3">
-                                    🗑️ Hapus
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>2</td>
-                            <td>VIII-B</td>
-                            <td>Pak Dedi</td>
-                            <td>
-                                <button class="btn btn-sm btn-warning rounded-pill px-3 me-1" data-bs-toggle="modal" data-bs-target="#editModal">
-                                    ✏️ Edit
-                                </button>
-                                <button class="btn btn-sm btn-danger rounded-pill px-3">
-                                    🗑️ Hapus
-                                </button>
-                            </td>
-                        </tr>
+                    <tbody class="text-center small">
+                        @forelse($kelas as $k)
+                            <tr>
+                                <td>{{ $loop->iteration + ($kelas->currentPage() - 1) * $kelas->perPage() }}</td>
+                                <td>
+                                    <span class="badge bg-info text-white rounded-pill px-3 py-2">
+                                        {{ $k->nama_kelas }}
+                                    </span>
+                                </td>
+                                <td>{{ $k->wali_kelas }}</td>
+                                <td>
+                                    <div class="d-flex justify-content-center gap-2">
+                                        {{-- Edit --}}
+                                        <a href="{{ route('kelas.edit', $k->id) }}" class="btn btn-sm btn-warning rounded-pill px-3">
+                                            <i class="bi bi-pencil-square"></i> Edit
+                                        </a>
+
+                                        {{-- Hapus --}}
+                                        <form action="{{ route('kelas.destroy', $k->id) }}" method="POST" onsubmit="return confirm('Yakin hapus kelas ini?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                                <i class="bi bi-trash"></i> Hapus
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="text-muted py-3">Belum ada data kelas.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
 
-            {{-- Pagination dummy --}}
-            <nav class="mt-4">
-                <ul class="pagination justify-content-center flex-wrap gap-1 mb-0">
-                    <li class="page-item disabled"><span class="page-link rounded-pill px-3">«</span></li>
-                    <li class="page-item active"><span class="page-link rounded-pill px-3">1</span></li>
-                    <li class="page-item"><a class="page-link rounded-pill px-3" href="#">2</a></li>
-                    <li class="page-item"><a class="page-link rounded-pill px-3" href="#">3</a></li>
-                    <li class="page-item"><a class="page-link rounded-pill px-3" href="#">4</a></li>
-                    <li class="page-item"><a class="page-link rounded-pill px-3" href="#">5</a></li>
-                    <li class="page-item"><a class="page-link rounded-pill px-3" href="#">»</a></li>
-                </ul>
-            </nav>
-        </div>
-    </div>
-</div>
-
-{{-- ================== MODAL TAMBAH KELAS ================== --}}
-<div class="modal fade" id="tambahModal" tabindex="-1">
-    <div class="modal-dialog modal-md modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0 shadow">
-            <div class="modal-header bg-light border-0">
-                <h5 class="modal-title fw-bold text-primary">Tambah Kelas Baru</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            {{-- PAGINATION --}}
+            <div class="mt-3 d-flex justify-content-center">
+                {{ $kelas->links() }}
             </div>
-
-            <form>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Nama Kelas</label>
-                            <input type="text" class="form-control form-control-lg" placeholder="Contoh: IX-A">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Wali Kelas</label>
-                            <input type="text" class="form-control form-control-lg" placeholder="Contoh: Pak Budi">
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4">Simpan</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-{{-- ================== MODAL EDIT KELAS ================== --}}
-<div class="modal fade" id="editModal" tabindex="-1">
-    <div class="modal-dialog modal-md modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0 shadow">
-            <div class="modal-header bg-light border-0">
-                <h5 class="modal-title fw-bold text-warning">Edit Data Kelas</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-
-            <form>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Nama Kelas</label>
-                            <input type="text" class="form-control form-control-lg" value="VIII-B">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Wali Kelas</label>
-                            <input type="text" class="form-control form-control-lg" value="Pak Dedi">
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-warning rounded-pill px-4">Simpan Perubahan</button>
-                </div>
-            </form>
         </div>
     </div>
 </div>
 @endsection
 
 @push('styles')
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 <style>
-    .pagination {
-        margin-top: 1rem;
+    .input-group-lg .form-control {
+        font-size: 14px;
+        border-radius: 50px !important;
+        box-shadow: none !important;
     }
 
-    .page-link {
-        border: none !important;
-        color: #0d6efd;
-        font-weight: 500;
+    .btn-primary {
+        background: linear-gradient(135deg, #0d6efd, #0052cc);
+        border: none;
         transition: all 0.2s ease-in-out;
     }
 
-    .page-link:hover {
-        background-color: #e8f0fe;
-        color: #0b5ed7;
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        background: linear-gradient(135deg, #0052cc, #003d99);
     }
 
-    .page-item.active .page-link {
-        background-color: #0d6efd;
-        color: white !important;
-        font-weight: 600;
-        box-shadow: 0 0 8px rgba(13, 110, 253, 0.3);
+    .btn-warning {
+        color: #fff;
+        background: linear-gradient(135deg, #ffb02e, #ff8800);
+        border: none;
     }
 
-    .pagination .page-link.rounded-pill {
-        border-radius: 50rem !important;
+    .btn-warning:hover {
+        background: linear-gradient(135deg, #ff8800, #cc6b00);
+    }
+
+    .badge {
+        font-size: 12.5px;
+        letter-spacing: 0.3px;
+    }
+
+    .card {
+        border-radius: 14px;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
     }
 </style>
 @endpush

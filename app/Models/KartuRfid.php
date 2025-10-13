@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class KartuRfid extends Model
 {
     protected $table = 'kartu_rfid';
-    protected $fillable = ['uid','nis','aktif'];
+    protected $fillable = ['uid', 'nis', 'status_aktif'];
 
     public function siswa(): BelongsTo
     {
