@@ -57,19 +57,7 @@
                     </div>
                 </div>
 
-                {{-- Status --}}
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold text-secondary">Status</label>
-                    <div class="input-group input-group-lg shadow-sm rounded-pill">
-                        <span class="input-group-text bg-white border-0 ps-3">
-                            <i class="bi bi-toggle-on text-warning"></i>
-                        </span>
-                        <select name="status_aktif" class="form-select border-0 rounded-end-pill">
-                            <option value="1">Aktif</option>
-                            <option value="0">Nonaktif</option>
-                        </select>
-                    </div>
-                </div>
+
 
                 {{-- Tombol --}}
                 <div class="col-12 text-end">

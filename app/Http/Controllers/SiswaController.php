@@ -29,18 +29,20 @@ class SiswaController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'nis'          => 'required|string|max:50|unique:siswa,nis',
-            'nama'         => 'required|string|max:100',
-            'id_kelas'     => 'required|exists:kelas,id',
-            'status_aktif' => 'required|boolean',
+            'nis'      => 'required|string|max:50|unique:siswa,nis',
+            'nama'     => 'required|string|max:100',
+            'id_kelas' => 'required|exists:kelas,id',
         ], [
-            'nis.unique'       => 'NIS sudah terdaftar!',
-            'id_kelas.required'=> 'Kelas wajib dipilih.',
+            'nis.unique'        => 'NIS sudah terdaftar!',
+            'id_kelas.required' => 'Kelas wajib dipilih.',
         ]);
+
+        // Otomatis set status_aktif = 1
+        $data['status_aktif'] = 1;
 
         Siswa::create($data);
 
-        return redirect()->route('siswa.index')->with('ok', '✅ Siswa baru berhasil ditambahkan.');
+        return redirect()->route('siswa.index')->with('ok', '✅ Siswa baru berhasil ditambahkan dan otomatis aktif.');
     }
 
     /**
@@ -64,13 +66,16 @@ class SiswaController extends Controller
     public function update(Request $request, $id)
     {
         $data = $request->validate([
-            'nis'          => 'required|string|max:50|unique:siswa,nis,' . $id,
-            'nama'         => 'required|string|max:100',
-            'id_kelas'     => 'required|exists:kelas,id',
-            'status_aktif' => 'required|boolean',
+            'nis'      => 'required|string|max:50|unique:siswa,nis,' . $id,
+            'nama'     => 'required|string|max:100',
+            'id_kelas' => 'required|exists:kelas,id',
         ]);
 
         $siswa = Siswa::findOrFail($id);
+
+        // Tetap aktif saat update (opsional, bisa dihapus kalau nanti ingin bisa nonaktif)
+        $data['status_aktif'] = 1;
+
         $siswa->update($data);
 
         return redirect()->route('siswa.index')->with('ok', '✏️ Data siswa berhasil diperbarui.');
