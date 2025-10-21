@@ -25,10 +25,11 @@
                 @csrf
                 <div class="col-md-5">
                     <label class="form-label small fw-semibold text-secondary">UID Kartu</label>
-                    <input type="text" name="uid" class="form-control rounded-pill shadow-sm" placeholder="Contoh: RFID-123456" required>
+                    <input type="text" name="uid" class="form-control rounded-pill shadow-sm" placeholder="Contoh: 04:A1:B2:C3:D4" required>
                 </div>
                 <div class="col-md-5">
                     <label class="form-label small fw-semibold text-secondary">NIS Siswa</label>
+                    {{-- kamu bisa ganti ke select dropdown jika mau: --}}
                     <input type="text" name="nis" class="form-control rounded-pill shadow-sm" placeholder="Masukkan NIS siswa" required>
                 </div>
                 <div class="col-md-2 text-end">
@@ -54,24 +55,26 @@
                             <th>UID</th>
                             <th>NIS</th>
                             <th>Nama Siswa</th>
+                            <th>Kelas</th>
                             <th>Status</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($kartu as $k)
+                        @forelse($kartu as $i => $k)
                             <tr>
-                                <td>{{ $loop->iteration }}</td>
-                                <td>{{ $k['uid'] }}</td>
-                                <td>{{ $k['nis'] ?? '-' }}</td>
-                                <td>{{ $k['nama_siswa'] ?? '-' }}</td>
+                                <td>{{ $kartu->firstItem() + $i }}</td>
+                                <td>{{ $k->uid }}</td>
+                                <td>{{ $k->nis ?? '-' }}</td>
+                                <td>{{ $k->siswa->nama ?? '-' }}</td>
+                                <td>{{ $k->siswa->kelas->nama_kelas ?? '-' }}</td>
                                 <td>
-                                    <span class="badge rounded-pill {{ $k['status'] == 'Aktif' ? 'bg-success' : 'bg-danger' }}">
-                                        {{ $k['status'] }}
+                                    <span class="badge rounded-pill {{ $k->status_aktif ? 'bg-success' : 'bg-danger' }}">
+                                        {{ $k->status_aktif ? 'Aktif' : 'Nonaktif' }}
                                     </span>
                                 </td>
                                 <td>
-                                    <form action="{{ route('kartu.destroy', $k['id']) }}" method="POST" onsubmit="return confirm('Hapus kartu ini?')">
+                                    <form action="{{ route('kartu.destroy', $k->id) }}" method="POST" onsubmit="return confirm('Hapus kartu ini?')">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
@@ -81,10 +84,14 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="text-muted py-3">Belum ada data kartu.</td></tr>
+                            <tr><td colspan="7" class="text-muted py-3">Belum ada data kartu.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+
+            <div class="mt-3 d-flex justify-content-center">
+                {{ $kartu->links('pagination::bootstrap-5') }}
             </div>
         </div>
     </div>

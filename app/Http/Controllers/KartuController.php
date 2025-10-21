@@ -7,47 +7,42 @@ use App\Models\{KartuRfid, Siswa};
 
 class KartuController extends Controller
 {
-    /**
-     * Tampilkan daftar kartu RFID + form tambah di atas tabel.
-     */
     public function index()
     {
-        // ambil semua kartu beserta relasi siswa dan kelas
-        $kartu = KartuRfid::with('siswa.kelas')->orderBy('id', 'desc')->paginate(10);
+        // ambil kartu sebagai MODEL (bukan array), lengkap dengan relasi siswa->kelas
+        $kartu = KartuRfid::with('siswa.kelas')
+            ->orderByDesc('id')
+            ->paginate(10);
 
-        // ambil daftar siswa aktif untuk dropdown
+        // dropdown siswa aktif
         $siswa = Siswa::with('kelas')
             ->where('status_aktif', true)
             ->orderBy('nama')
-            ->get();
+            ->get(['id','nis','nama','id_kelas']);
 
         return view('kartu.index', compact('kartu', 'siswa'));
     }
 
-    /**
-     * Simpan kartu baru dari form.
-     */
     public function store(Request $request)
     {
         $data = $request->validate([
-            'uid'          => 'required|string|unique:kartu_rfid,uid',
-            'nis'          => 'required|exists:siswa,nis',
-            'status_aktif' => 'required|boolean',
+            'uid' => 'required|string|unique:kartu_rfid,uid',
+            'nis' => 'required|exists:siswa,nis',
         ], [
-            'uid.required' => 'ID Kartu harus diisi.',
-            'uid.unique'   => 'ID Kartu sudah terdaftar.',
-            'nis.required' => 'Pilih siswa pemilik kartu.',
+            'uid.required' => 'UID Kartu harus diisi.',
+            'uid.unique'   => 'UID Kartu sudah terdaftar.',
+            'nis.required' => 'NIS siswa wajib diisi.',
             'nis.exists'   => 'Siswa dengan NIS tersebut tidak ditemukan.',
         ]);
+
+        // default aktif (karena form tidak mengirim status)
+        $data['status_aktif'] = 1;
 
         KartuRfid::create($data);
 
         return back()->with('ok', 'Kartu RFID berhasil ditambahkan.');
     }
 
-    /**
-     * Hapus kartu RFID.
-     */
     public function destroy($id)
     {
         $kartu = KartuRfid::findOrFail($id);

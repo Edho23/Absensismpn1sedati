@@ -1,3 +1,4 @@
+{{-- resources/views/layouts/navbar.blade.php --}}
 <nav class="navbar">
   <div class="navbar-left">
     <img src="/LogoSmp1.png" alt="Logo" class="navbar-logo">
@@ -7,6 +8,9 @@
     </div>
   </div>
   <div class="navbar-right">
-    {{-- kalau nanti mau tambah user dropdown/notif di sini --}}
+    <form action="{{ route('admin.logout') }}" method="POST" class="d-inline">
+      @csrf
+      <button type="submit" class="btn btn-sm btn-outline-light">Logout</button>
+    </form>
   </div>
 </nav>

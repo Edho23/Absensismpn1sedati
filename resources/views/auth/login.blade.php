@@ -85,19 +85,21 @@
       <h3>Sistem Presensi</h3>
       <p>SMP Negeri 1 Sedati</p>
 
-      <form action="{{ route('dashboard') }}" method="GET">
+      <form action="{{ route('admin.login') }}" method="POST">
+          @csrf
           <div class="mb-3 text-start">
-              <label class="form-label fw-semibold">Username</label>
-              <input type="text" name="username" class="form-control" placeholder="Masukkan username..." required>
+            <label class="form-label fw-semibold">Username</label>
+            <input type="text" name="username" class="form-control" required>
           </div>
 
-          <div class="mb-4 text-start">
-              <label class="form-label fw-semibold">Password</label>
-              <input type="password" name="password" class="form-control" placeholder="Masukkan password..." required>
+         <div class="mb-4 text-start">
+            <label class="form-label fw-semibold">Password</label>
+            <input type="password" name="password" class="form-control" required>
           </div>
-
           <button type="submit" class="btn btn-login w-100 text-white">Masuk</button>
       </form>
+
+
 
       <p class="mt-4 small text-muted">
         © {{ date('Y') }} SMPN 1 Sedati — Sistem Presensi
