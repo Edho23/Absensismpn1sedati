@@ -4,38 +4,60 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Absensi;
-use App\Models\Siswa;
 use App\Models\Kelas;
 use Carbon\Carbon;
 
 class LaporanController extends Controller
 {
+    /**
+     * Halaman utama laporan kehadiran
+     */
     public function index(Request $request)
     {
-        // Ambil filter dari query string (kalau ada)
+        // Ambil parameter filter
         $tanggal = $request->query('tanggal');
-        $kelasId = $request->query('kelas_id');
+        $kelas   = $request->query('kelas');
+        $status  = $request->query('status');
 
-        // Query dasar absensi
-        $query = Absensi::with('siswa.kelas')->orderByDesc('tanggal');
+        // Query utama: ambil absensi + relasi siswa dan kelas
+        $query = Absensi::with('siswa.kelas')->orderByDesc('tanggal')->orderByDesc('jam_masuk');
 
+        // Filter tanggal
         if ($tanggal) {
             $query->whereDate('tanggal', $tanggal);
         }
 
-        if ($kelasId) {
-            $query->whereHas('siswa', fn($q) => $q->where('id_kelas', $kelasId));
+        // Filter kelas (berdasarkan nama kelas)
+        if ($kelas) {
+            $query->whereHas('siswa.kelas', fn($q) => $q->where('nama_kelas', $kelas));
         }
 
-        $laporan = $query->paginate(20);
-        $kelas   = Kelas::orderBy('tingkat')->orderBy('nama_kelas')->get();
+        // Filter status
+        if ($status) {
+            $query->where('status_harian', $status);
+        }
 
-        return view('laporan.index', compact('laporan', 'kelas', 'tanggal', 'kelasId'));
+        // Ambil hasilnya
+        $absensi = $query->paginate(20);
+
+        // Ambil daftar kelas untuk dropdown filter
+        $daftarKelas = Kelas::orderBy('tingkat')->orderBy('nama_kelas')->pluck('nama_kelas');
+
+        return view('laporan.index', [
+            'absensi'     => $absensi,
+            'daftarKelas' => $daftarKelas,
+            'tanggal'     => $tanggal,
+            'kelas'       => $kelas,
+            'status'      => $status,
+        ]);
     }
 
+    /**
+     * Export laporan ke file (nanti bisa diaktifkan)
+     */
     public function export(Request $request)
     {
-        // (opsional) logic export bisa ditulis nanti
+        // Catatan: fitur export (Excel/PDF) bisa ditambahkan nanti.
         return back()->with('ok', 'Fitur export laporan belum diaktifkan.');
     }
 }

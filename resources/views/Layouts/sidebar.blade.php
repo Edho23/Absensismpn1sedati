@@ -27,7 +27,6 @@
             </button>
 
             <ul class="collapse {{ request()->is('absensi*') ? 'show' : '' }}" id="menuPresensi">
-
                 {{-- Input Manual --}}
                 <li>
                     <a href="{{ route('absensi.input') }}" 
@@ -64,7 +63,6 @@
                 </div>
                 <i class="bi bi-caret-down-fill small"></i>
             </button>
-
             <ul class="collapse {{ request()->is('siswa*') || request()->is('kelas*') || request()->is('kartu*') ? 'show' : '' }}" id="menuMaster">
                 <li><a href="{{ route('siswa.index') }}" class="submenu-link {{ request()->routeIs('siswa.*') ? 'active' : '' }}">Siswa</a></li>
                 <li><a href="{{ route('kelas.index') }}" class="submenu-link {{ request()->routeIs('kelas.*') ? 'active' : '' }}">Kelas</a></li>
@@ -78,6 +76,15 @@
                class="menu-link d-flex align-items-center px-3 py-2 rounded-3 {{ request()->routeIs('laporan.*') ? 'active' : '' }}">
                 <i class="bi bi-file-earmark-text me-3 fs-5"></i>
                 <span class="fw-medium">Laporan</span>
+            </a>
+        </li>
+
+        {{-- Log Admin --}}
+        <li class="menu-item mb-1">
+            <a href="{{ route('admin.logs') }}" 
+               class="menu-link d-flex align-items-center px-3 py-2 rounded-3 {{ request()->routeIs('admin.logs') ? 'active' : '' }}">
+                <i class="bi bi-journal-text me-3 fs-5"></i>
+                <span class="fw-medium">Log Admin</span>
             </a>
         </li>
 

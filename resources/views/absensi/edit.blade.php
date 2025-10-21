@@ -6,7 +6,7 @@
 <div class="container-fluid px-4 py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="fw-bold text-primary mb-0">
-            <i class="bi bi-clock-history me-2"></i> Edit Data Absensi
+            <i class="bi bi-clock-history me-2"></i> Edit Data Presensi
         </h3>
         <a href="{{ route('absensi.index') }}" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm">
             <i class="bi bi-arrow-left"></i> Kembali
@@ -69,7 +69,7 @@
                                 </form>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="text-muted py-3">Belum ada data absensi.</td></tr>
+                            <tr><td colspan="8" class="text-muted py-3">Belum ada data Presensi.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

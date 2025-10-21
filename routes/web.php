@@ -75,3 +75,10 @@ Route::middleware('web')->group(function () {
     Route::get('/pengaturan', [PengaturanController::class, 'index'])->name('pengaturan.index');
     Route::post('/pengaturan', [PengaturanController::class, 'update'])->name('pengaturan.update');
 });
+    Route::get('/login', function () {
+    return view('auth.login');
+})->name('login');
+
+Route::get('/admin/logs', function () {
+    return view('adminlog.index');
+})->name('admin.logs');

@@ -5,7 +5,7 @@
 <div class="container-fluid">
 
   {{-- ===== TITLE ===== --}}
-  <h3 class="page-title"><i class="bi bi-journal-text"></i> Log Absensi</h3>
+  <h3 class="page-title"><i class="bi bi-journal-text"></i> Log Presensi</h3>
 
   {{-- ===== FILTER CARD ===== --}}
   <div class="card-custom mb-4">
@@ -40,7 +40,7 @@
 
   {{-- ===== DATA TABLE ===== --}}
   <div class="card-custom">
-    <h6 class="fw-semibold mb-3 text-secondary">Data Log Absensi</h6>
+    <h6 class="fw-semibold mb-3 text-secondary">Data Log Presensi</h6>
 
     <div class="table-responsive">
       <table class="table align-middle text-center">
@@ -80,7 +80,7 @@
             </tr>
           @empty
             <tr>
-              <td colspan="9" class="text-muted py-3">Belum ada data absensi.</td>
+              <td colspan="9" class="text-muted py-3">Belum ada data presensi.</td>
             </tr>
           @endforelse
         </tbody>

@@ -6,7 +6,7 @@
 <div class="container-fluid px-4 py-3">
     {{-- HEADER --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold text-primary mb-0">📝 Input Manual Absensi</h3>
+        <h3 class="fw-bold text-primary mb-0">📝 Input Manual Presensi</h3>
     </div>
 
     {{-- ALERT --}}
@@ -20,7 +20,7 @@
     {{-- ================== FORM INPUT MANUAL ================== --}}
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body">
-            <h6 class="fw-bold text-secondary mb-3">Tambah Absensi Manual Hari Ini</h6>
+            <h6 class="fw-bold text-secondary mb-3">Tambah Presensi Manual Hari Ini</h6>
             <form action="{{ route('absensi.manual') }}" method="POST">
                 @csrf
                 <div class="row g-3 align-items-center">
@@ -56,10 +56,10 @@
         </div>
     </div>
 
-    {{-- ================== TABEL ABSENSI HARI INI ================== --}}
+    {{-- ================== TABEL Presensi HARI INI ================== --}}
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-header bg-white border-0 py-3 px-4">
-            <h6 class="fw-semibold text-secondary mb-0">Daftar Absensi Hari Ini ({{ \Carbon\Carbon::parse($tanggal)->format('d M Y') }})</h6>
+            <h6 class="fw-semibold text-secondary mb-0">Daftar Presensi Hari Ini ({{ \Carbon\Carbon::parse($tanggal)->format('d M Y') }})</h6>
         </div>
         <div class="card-body px-4 pb-3">
             <div class="table-responsive">
@@ -96,7 +96,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-muted py-3">Belum ada data absensi hari ini.</td>
+                                <td colspan="7" class="text-muted py-3">Belum ada data presensi hari ini.</td>
                             </tr>
                         @endforelse
                     </tbody>

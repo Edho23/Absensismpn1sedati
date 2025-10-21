@@ -60,7 +60,7 @@
 
         /* Navbar */
         .navbar {
-            background: linear-gradient(135deg, #0d6efd, #004ecb);
+            background: linear-gradient(135deg, #0d6efd, #56ADF7);
             color: #fff;
             padding: 12px 25px;
             display: flex;
