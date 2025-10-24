@@ -18,7 +18,7 @@ class KartuController extends Controller
         $siswa = Siswa::with('kelas')
             ->where('status_aktif', true)
             ->orderBy('nama')
-            ->get(['id','nis','nama','id_kelas']);
+            ->get(['id','nis','nama','kelas_id']);
 
         return view('kartu.index', compact('kartu', 'siswa'));
     }

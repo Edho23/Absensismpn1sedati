@@ -10,11 +10,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Siswa extends Model
 {
     protected $table = 'siswa';
-    protected $fillable = ['nis','nama','id_kelas','status_aktif'];
+    protected $fillable = ['nis','nama','kelas_id','status_aktif'];
 
     public function kelas(): BelongsTo
     {
-        return $this->belongsTo(Kelas::class, 'id_kelas');
+        return $this->belongsTo(Kelas::class, 'kelas_id');
     }
 
     public function kartu(): HasOne

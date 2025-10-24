@@ -3,75 +3,104 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\{Absensi,Siswa,Kelas};
+use Illuminate\Validation\Rule;
+use App\Models\{Absensi, Siswa, Kelas};
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class AbsensiController extends Controller
 {
-    // ================== /absensi (Input manual + tabel hari ini) ==================
+    /**
+     * ================== /absensi (Input manual + tabel hari ini) ==================
+     * View form input manual (pakai NIS ketik + typeahead) dan tabel absensi hari ini.
+     */
     public function index(Request $req)
     {
-        $today = Carbon::today()->toDateString();
+        $today = Carbon::now('Asia/Jakarta')->toDateString();
 
-        // data siswa aktif utk dropdown
-        $siswa = Siswa::with('kelas')
-            ->where('status_aktif', true)
-            ->orderBy('nama')
-            ->get(['id','nis','nama','id_kelas']);
-
-        // data absensi hari ini
+        // Tabel absensi hari ini
         $absensi = Absensi::with('siswa.kelas')
             ->whereDate('tanggal', $today)
             ->orderByDesc('jam_masuk')
             ->paginate(20);
 
-        // daftar kelas (kalau nanti perlu filter)
-        $kelas = Kelas::orderBy('tingkat')->orderBy('nama_kelas')->get();
-
         return view('absensi.index', [
-            'siswa'   => $siswa,
-            'absensi' => $absensi,   // <- Blade kamu pakai $absensi
-            'kelas'   => $kelas,
+            'absensi' => $absensi,
             'tanggal' => $today,
         ]);
     }
 
-    // ================== POST /absensi/manual ==================
+    /**
+     * ================== POST /absensi/manual ==================
+     * Simpan presensi manual berbasis NIS.
+     * - Validasi: NIS wajib & siswa harus AKTIF
+     * - Idempotent per hari: (nis, tanggal) unik → update or create
+     * - Jika status "HADIR" dan jam_masuk kosong → set jam_masuk = now(Asia/Jakarta)
+     */
     public function storeManual(Request $req)
     {
-        // Blade lama pakai name="id_siswa", tapi skema terbaru pakai NIS.
-        // Aku dukung KEDUANYA agar lancar dipakai sekarang.
+        // Normalisasi input (trim & uppercase NIS)
         $req->merge([
-            'nis' => $req->input('nis') ?: Siswa::find($req->input('id_siswa'))?->nis
+            'nis' => strtoupper(trim((string) $req->input('nis'))),
         ]);
 
+        // Validasi: siswa aktif saja
         $data = $req->validate([
-            'nis'            => 'required|exists:siswa,nis',
-            'status_harian'  => 'required|in:HADIR,SAKIT,ALPA',
-            'catatan'        => 'nullable|string',
-            'kode_perangkat' => 'nullable|string',
+            'nis' => [
+                'required',
+                Rule::exists('siswa', 'nis')->where(fn ($q) => $q->where('status_aktif', 1)),
+            ],
+            'status_harian'  => ['required', Rule::in(['HADIR','SAKIT','ALPA'])],
+            'catatan'        => ['nullable', 'string'],
+            'kode_perangkat' => ['nullable', 'string', 'max:100'],
+        ], [
+            'nis.required' => 'NIS wajib diisi.',
+            'nis.exists'   => 'NIS tidak ditemukan atau siswa non-aktif.',
         ]);
 
-        $today = Carbon::today()->toDateString();
+        $today = Carbon::now('Asia/Jakarta')->toDateString();
 
-        $absen = Absensi::firstOrCreate(
-            ['nis'=>$data['nis'], 'tanggal'=>$today],
-            ['sumber'=>'MANUAL']
-        );
+        try {
+            DB::beginTransaction();
 
-        $absen->status_harian  = $data['status_harian'];
-        $absen->catatan        = $data['catatan']        ?? $absen->catatan;
-        $absen->kode_perangkat = $data['kode_perangkat'] ?? $absen->kode_perangkat;
-        if ($data['status_harian'] === 'HADIR' && !$absen->jam_masuk) $absen->jam_masuk = now();
-        $absen->save();
+            // Ambil/buat baris absensi hari ini untuk NIS tsb
+            $absen = Absensi::firstOrNew([
+                'nis'     => $data['nis'],
+                'tanggal' => $today,
+            ]);
 
-        return back()->with('ok','Input manual tersimpan');
+            // Set sumber manual & field lain
+            $absen->sumber         = 'MANUAL';
+            $absen->status_harian  = $data['status_harian'];
+            $absen->catatan        = $data['catatan']        ?? $absen->catatan;
+            $absen->kode_perangkat = $data['kode_perangkat'] ?? ($absen->kode_perangkat ?: 'MANUAL-ADMIN');
+
+            // Jika HADIR & belum ada jam_masuk → set sekarang (WIB)
+            if ($data['status_harian'] === 'HADIR' && empty($absen->jam_masuk)) {
+                $absen->jam_masuk = Carbon::now('Asia/Jakarta');
+            }
+
+            // Flag terlambat TIDAK dihitung di backend (sesuai keputusan: dihitung di ESP)
+            // $absen->terlambat = ... (biarkan null atau sesuai data dari perangkat nanti)
+
+            $absen->save();
+
+            DB::commit();
+            return back()->with('ok', 'Presensi manual tersimpan.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            report($e);
+            return back()->withErrors(['gagal' => 'Terjadi kesalahan saat menyimpan.'])->withInput();
+        }
     }
 
-    // ================== /absensi/edit (halaman edit data) ==================
+    /**
+     * ================== /absensi/edit ==================
+     * Halaman edit absensi berdasarkan tanggal/nis (opsional filter).
+     */
     public function edit(Request $req)
     {
-        $tanggal = $req->query('tanggal', Carbon::today()->toDateString());
+        $tanggal = $req->query('tanggal', Carbon::now('Asia/Jakarta')->toDateString());
         $nis     = $req->query('nis');
 
         $q = Absensi::with('siswa.kelas')->whereDate('tanggal', $tanggal);
@@ -80,18 +109,20 @@ class AbsensiController extends Controller
         $absensi = $q->orderBy('nis')->paginate(20);
 
         return view('absensi.edit', [
-            'tanggal' => $tanggal,
+            'tanggal'    => $tanggal,
             'filter_nis' => $nis,
-            'absensi' => $absensi,   // <- Blade kamu pakai $absensi
+            'absensi'    => $absensi,
         ]);
     }
 
-    // ================== /absensi/log (log riwayat) ==================
+    /**
+     * ================== /absensi/log ==================
+     * Riwayat absensi dengan filter tanggal/kelas/status.
+     */
     public function log(Request $req)
     {
-        // Blade-mu menerima: $tanggal, $kelas (nama kelas), $status, $daftarKelas, $absensi
-        $tanggal = $req->query('tanggal');     // jika kosong, tampilkan semua
-        $kelas   = $req->query('kelas');       // nama kelas (contoh: "7A")
+        $tanggal = $req->query('tanggal');     // yyyy-mm-dd
+        $kelas   = $req->query('kelas');       // nama kelas
         $status  = $req->query('status');      // HADIR/SAKIT/ALPA
 
         $q = Absensi::with('siswa.kelas')->orderByDesc('tanggal')->orderByDesc('jam_masuk');
@@ -104,7 +135,9 @@ class AbsensiController extends Controller
 
         $absensi = $q->paginate(20);
 
-        $daftarKelas = Kelas::orderBy('tingkat')->orderBy('nama_kelas')->pluck('nama_kelas');
+        $daftarKelas = Kelas::orderBy('tingkat')
+            ->orderBy('nama_kelas')
+            ->pluck('nama_kelas');
 
         return view('absensi.log', [
             'absensi'     => $absensi,
@@ -115,24 +148,32 @@ class AbsensiController extends Controller
         ]);
     }
 
-    // ================== Update & Delete untuk halaman edit ==================
+    /**
+     * ================== Update data ==================
+     * PUT /absensi/{id}
+     * - jam_masuk/jam_pulang diinput format HH:mm → digabung dengan tanggal
+     */
     public function update(Request $req, int $id)
     {
         $data = $req->validate([
             'jam_masuk'      => 'nullable|date_format:H:i',
             'jam_pulang'     => 'nullable|date_format:H:i',
-            'status_harian'  => 'nullable|in:HADIR,SAKIT,ALPA',
+            'status_harian'  => ['nullable', Rule::in(['HADIR','SAKIT','ALPA'])],
             'catatan'        => 'nullable|string',
         ]);
 
         $absen = Absensi::findOrFail($id);
 
-        // gabungkan tanggal + jam (Blade kirim HH:mm)
-        if (isset($data['jam_masuk'])) {
-            $absen->jam_masuk  = $data['jam_masuk'] ? Carbon::parse($absen->tanggal.' '.$data['jam_masuk']) : null;
+        // Gabungkan tanggal + jam (WIB)
+        if (array_key_exists('jam_masuk', $data)) {
+            $absen->jam_masuk = $data['jam_masuk']
+                ? Carbon::parse($absen->tanggal . ' ' . $data['jam_masuk'], 'Asia/Jakarta')
+                : null;
         }
-        if (isset($data['jam_pulang'])) {
-            $absen->jam_pulang = $data['jam_pulang'] ? Carbon::parse($absen->tanggal.' '.$data['jam_pulang']) : null;
+        if (array_key_exists('jam_pulang', $data)) {
+            $absen->jam_pulang = $data['jam_pulang']
+                ? Carbon::parse($absen->tanggal . ' ' . $data['jam_pulang'], 'Asia/Jakarta')
+                : null;
         }
 
         if (array_key_exists('status_harian', $data)) $absen->status_harian = $data['status_harian'];
@@ -140,12 +181,16 @@ class AbsensiController extends Controller
 
         $absen->save();
 
-        return back()->with('ok','Absensi diupdate');
+        return back()->with('ok', 'Absensi diupdate.');
     }
 
+    /**
+     * ================== Hapus data ==================
+     * DELETE /absensi/{id}
+     */
     public function destroy(int $id)
     {
         Absensi::findOrFail($id)->delete();
-        return back()->with('ok','Absensi dihapus');
+        return back()->with('ok', 'Absensi dihapus.');
     }
 }

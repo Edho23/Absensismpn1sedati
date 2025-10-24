@@ -48,7 +48,7 @@
                         <span class="input-group-text bg-white border-0 ps-3">
                             <i class="bi bi-building text-info"></i>
                         </span>
-                        <select name="id_kelas" class="form-select border-0 rounded-end-pill" required>
+                        <select name="kelas_id" class="form-select border-0 rounded-end-pill" required>
                             <option value="">-- Pilih Kelas --</option>
                             @foreach($kelas as $k)
                                 <option value="{{ $k->id }}">{{ $k->nama_kelas }}</option>

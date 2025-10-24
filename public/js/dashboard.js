@@ -1,19 +1,35 @@
-(function(){
-  const ctx = document.getElementById('chartAttendance');
-  if (!ctx || !window.__chartData) return;
-  const {labels, series} = window.__chartData;
+// public/js/dashboard.js
+(function () {
+  var el = document.getElementById('chartAttendance');
+  if (!el || typeof Chart === 'undefined') return;
 
-  // Chart.js line
+  var data = (window.__chartData || {});
+  var labels = Array.isArray(data.labels) ? data.labels : [];
+  var series = Array.isArray(data.series) ? data.series : [];
+
+  var ctx = el.getContext('2d');
   new Chart(ctx, {
     type: 'line',
     data: {
-      labels,
-      datasets: [{ label: 'Kehadiran', data: series, tension: 0.3 }]
+      labels: labels,
+      datasets: [{
+        label: 'Jumlah Kehadiran',
+        data: series,
+        tension: 0.3,
+        fill: false
+      }]
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero:true, ticks: { precision:0 } } }
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true },
+        tooltip: { enabled: true }
+      },
+      scales: {
+        x: { ticks: { autoSkip: false } },
+        y: { beginAtZero: true, precision: 0 }
+      }
     }
   });
 })();

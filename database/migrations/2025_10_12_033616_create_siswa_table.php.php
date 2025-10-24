@@ -10,7 +10,7 @@ return new class extends Migration {
             $t->id();
             $t->string('nis')->unique();
             $t->string('nama');
-            $t->foreignId('id_kelas')->constrained('kelas')->cascadeOnDelete();
+            $t->foreignId('kelas_id')->constrained('kelas')->cascadeOnDelete();
             $t->boolean('status_aktif')->default(true)->index();
             $t->timestampsTz();
         });

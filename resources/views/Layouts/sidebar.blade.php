@@ -90,7 +90,7 @@
 
         {{-- Pengaturan --}}
         <li class="menu-item mt-2">
-            <a href="{{ route('pengaturan.index') }}" 
+            <a href="" 
                class="menu-link d-flex align-items-center px-3 py-2 rounded-3 {{ request()->routeIs('pengaturan.*') ? 'active' : '' }}">
                 <i class="bi bi-gear-fill me-3 fs-5"></i>
                 <span class="fw-medium">Pengaturan</span>

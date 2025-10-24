@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use App\Models\Siswa;
 use App\Models\Kelas;
 
@@ -31,15 +33,13 @@ class SiswaController extends Controller
         $data = $request->validate([
             'nis'      => 'required|string|max:50|unique:siswa,nis',
             'nama'     => 'required|string|max:100',
-            'id_kelas' => 'required|exists:kelas,id',
+            'kelas_id' => 'required|exists:kelas,id',
         ], [
             'nis.unique'        => 'NIS sudah terdaftar!',
-            'id_kelas.required' => 'Kelas wajib dipilih.',
+            'kelas_id.required' => 'Kelas wajib dipilih.',
         ]);
 
-        // Otomatis set status_aktif = 1
-        $data['status_aktif'] = 1;
-
+        $data['status_aktif'] = 1; // otomatis aktif
         Siswa::create($data);
 
         return redirect()->route('siswa.index')->with('ok', '✅ Siswa baru berhasil ditambahkan dan otomatis aktif.');
@@ -68,14 +68,11 @@ class SiswaController extends Controller
         $data = $request->validate([
             'nis'      => 'required|string|max:50|unique:siswa,nis,' . $id,
             'nama'     => 'required|string|max:100',
-            'id_kelas' => 'required|exists:kelas,id',
+            'kelas_id' => 'required|exists:kelas,id',
         ]);
 
         $siswa = Siswa::findOrFail($id);
-
-        // Tetap aktif saat update (opsional, bisa dihapus kalau nanti ingin bisa nonaktif)
-        $data['status_aktif'] = 1;
-
+        $data['status_aktif'] = 1; // tetap aktif
         $siswa->update($data);
 
         return redirect()->route('siswa.index')->with('ok', '✏️ Data siswa berhasil diperbarui.');
@@ -92,5 +89,50 @@ class SiswaController extends Controller
         $siswa->delete();
 
         return redirect()->route('siswa.index')->with('ok', '🗑️ Data siswa berhasil dihapus.');
+    }
+
+    /**
+     * ======================
+     * SEARCH untuk Typeahead NIS/Nama
+     * GET /siswa/search?term=...
+     * ======================
+     */
+    public function search(Request $r)
+    {
+        $term = trim((string) $r->query('term', ''));
+        if ($term === '') {
+            return response()->json([]);
+        }
+
+        $driver = DB::connection()->getDriverName();
+        $kw = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $term) . '%';
+
+        if ($driver === 'pgsql') {
+            // Supabase/Postgres: pakai ILIKE agar case-insensitive
+            $rows = Siswa::with('kelas')
+                ->whereRaw('(nis ILIKE ? OR nama ILIKE ?)', [$kw, $kw])
+                ->orderBy('nama')
+                ->limit(10)
+                ->get(['id','nis','nama','kelas_id']);
+        } else {
+            // MySQL/MariaDB
+            $rows = Siswa::with('kelas')
+                ->where(function ($q) use ($kw) {
+                    $q->where('nis', 'like', $kw)
+                      ->orWhere('nama', 'like', $kw);
+                })
+                ->orderBy('nama')
+                ->limit(10)
+                ->get(['id','nis','nama','kelas_id']);
+        }
+
+        $payload = $rows->map(fn($s) => [
+            'nis'   => $s->nis,
+            'nama'  => $s->nama,
+            'kelas' => $s->kelas->nama_kelas ?? '-',
+            'label' => "{$s->nis} — {$s->nama} (" . ($s->kelas->nama_kelas ?? '-') . ")",
+        ]);
+
+        return response()->json($payload);
     }
 }

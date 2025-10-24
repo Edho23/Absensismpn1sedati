@@ -3,14 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Absensi extends Model
 {
     protected $table = 'absensi';
+
     protected $fillable = [
-        'nis','tanggal','jam_masuk','jam_pulang','terlambat',
-        'status_harian','sumber','catatan','kode_perangkat'
+        'nis','tanggal','jam_masuk','jam_pulang','terlambat','status_harian',
+        'sumber','catatan','kode_perangkat',
     ];
 
     protected $casts = [
@@ -20,7 +20,7 @@ class Absensi extends Model
         'terlambat'  => 'boolean',
     ];
 
-    public function siswa(): BelongsTo
+    public function siswa()
     {
         return $this->belongsTo(Siswa::class, 'nis', 'nis');
     }
