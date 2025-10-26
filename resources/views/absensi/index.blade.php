@@ -55,6 +55,7 @@
                         <select name="status_harian" class="form-select form-select-sm rounded-3" required>
                             <option value="HADIR" {{ old('status_harian')==='HADIR' ? 'selected':'' }}>Hadir</option>
                             <option value="SAKIT" {{ old('status_harian')==='SAKIT' ? 'selected':'' }}>Sakit</option>
+                            <option value="IZIN"  {{ old('status_harian')==='IZIN'  ? 'selected':'' }}>Izin</option>
                             <option value="ALPA"  {{ old('status_harian')==='ALPA'  ? 'selected':'' }}>Alpa</option>
                         </select>
                     </div>

@@ -44,8 +44,8 @@
                         <th>Aksi</th>
                         <th>Route</th>
                         <th>Method</th>
-                        <th>IP</th>
                         <th>Waktu</th>
+                        <th>IP</th>
                     </tr>
                 </thead>
                 <tbody class="text-center">
@@ -56,8 +56,8 @@
                             <td><span class="badge bg-secondary">{{ $log->action }}</span></td>
                             <td class="text-start">{{ $log->route }}</td>
                             <td><span class="badge bg-info text-dark">{{ $log->method }}</span></td>
-                            <td>{{ $log->ip }}</td>
                             <td>{{ $log->created_at->format('Y-m-d H:i:s') }}</td>
+                            <td>{{ $log->ip }}</td>
                         </tr>
                     @empty
                         <tr><td colspan="7" class="text-muted py-3">Belum ada data log.</td></tr>

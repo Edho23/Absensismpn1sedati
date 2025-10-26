@@ -34,6 +34,7 @@
                         <option value="HADIR" {{ request('status') == 'HADIR' ? 'selected' : '' }}>Hadir</option>
                         <option value="SAKIT" {{ request('status') == 'SAKIT' ? 'selected' : '' }}>Sakit</option>
                         <option value="ALPA" {{ request('status') == 'ALPA' ? 'selected' : '' }}>Alpa</option>
+                        <option value="IZIN" {{ request('status') == 'IZIN' ? 'selected' : '' }}>Izin</option>
                     </select>
                 </div>
                 <div class="col-md-3 d-flex">
