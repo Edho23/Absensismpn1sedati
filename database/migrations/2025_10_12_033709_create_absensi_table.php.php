@@ -15,7 +15,7 @@ return new class extends Migration {
             $t->dateTimeTz('jam_pulang')->nullable();
 
             $t->boolean('terlambat')->default(false)->index();
-            $t->enum('status_harian', ['HADIR','ALPA','SAKIT'])->nullable();
+            $t->enum('status_harian', ['HADIR','ALPA','SAKIT','IZIN'])->nullable();
             $t->enum('sumber', ['RFID','MANUAL'])->default('RFID');
             $t->string('catatan')->nullable();
 

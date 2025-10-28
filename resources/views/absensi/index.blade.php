@@ -111,6 +111,7 @@
                                     <span class="badge
                                         @if($a->status_harian === 'HADIR') bg-success
                                         @elseif($a->status_harian === 'SAKIT') bg-warning text-dark
+                                        @elseif($a->status_harian === 'IZIN') bg-info text-dark
                                         @else bg-danger @endif
                                         rounded-pill px-3 py-2">
                                         {{ $a->status_harian ?? '-' }}

@@ -16,7 +16,7 @@ class DashboardController extends Controller
         // Waktu lokal
         $today = Carbon::now('Asia/Jakarta');
 
-        // Kartu info
+        // Kartu info (kotak atas dashboard)
         $cards = [
             'siswa' => Siswa::count(),
             'kelas' => Kelas::count(),
@@ -41,6 +41,21 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        return view('dashboard.index', compact('cards','labels','series','logs'));
+        // ==========================
+        // Tambahan: Jumlah Siswa Belum Tapping Hari Ini
+        // ==========================
+        $todayDate = $today->toDateString();
+        $sudahAbsenNis = Absensi::whereDate('tanggal', $todayDate)->pluck('nis');
+        $belumTapping = Siswa::whereNotIn('nis', $sudahAbsenNis)->count();
+
+
+        // Kirim ke view
+        return view('dashboard.index', compact(
+            'cards',
+            'labels',
+            'series',
+            'logs',
+            'belumTapping'
+        ));
     }
 }

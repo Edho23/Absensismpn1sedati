@@ -50,7 +50,7 @@ class AbsensiController extends Controller
                 'required',
                 Rule::exists('siswa', 'nis')->where(fn ($q) => $q->where('status_aktif', 1)),
             ],
-            'status_harian'  => ['required', Rule::in(['HADIR','SAKIT','ALPA'])],
+            'status_harian'  => ['required', Rule::in(['HADIR','SAKIT','ALPA','IZIN'])],
             'catatan'        => ['nullable', 'string'],
             'kode_perangkat' => ['nullable', 'string', 'max:100'],
         ], [
@@ -79,9 +79,6 @@ class AbsensiController extends Controller
             if ($data['status_harian'] === 'HADIR' && empty($absen->jam_masuk)) {
                 $absen->jam_masuk = Carbon::now('Asia/Jakarta');
             }
-
-            // Flag terlambat TIDAK dihitung di backend (sesuai keputusan: dihitung di ESP)
-            // $absen->terlambat = ... (biarkan null atau sesuai data dari perangkat nanti)
 
             $absen->save();
 
@@ -123,7 +120,7 @@ class AbsensiController extends Controller
     {
         $tanggal = $req->query('tanggal');     // yyyy-mm-dd
         $kelas   = $req->query('kelas');       // nama kelas
-        $status  = $req->query('status');      // HADIR/SAKIT/ALPA
+        $status  = $req->query('status');      // HADIR/SAKIT/ALPA/IZIN
 
         $q = Absensi::with('siswa.kelas')->orderByDesc('tanggal')->orderByDesc('jam_masuk');
 
@@ -154,39 +151,37 @@ class AbsensiController extends Controller
      * - jam_masuk/jam_pulang diinput format HH:mm → digabung dengan tanggal
      */
     public function update(Request $req, int $id)
-{
-    $data = $req->validate([
-        'jam_masuk'      => 'nullable|date_format:H:i',
-        'jam_pulang'     => 'nullable|date_format:H:i',
-        'status_harian'  => 'nullable|in:HADIR,SAKIT,ALPA',
-        'catatan'        => 'nullable|string',
-    ]);
+    {
+        $data = $req->validate([
+            'jam_masuk'      => 'nullable|date_format:H:i',
+            'jam_pulang'     => 'nullable|date_format:H:i',
+            'status_harian'  => 'nullable|in:HADIR,SAKIT,ALPA,IZIN',
+            'catatan'        => 'nullable|string',
+        ]);
 
-    $absen = Absensi::findOrFail($id);
+        $absen = Absensi::findOrFail($id);
 
-    // Ambil tanggal base (pastikan date-only), lalu set jamnya
-    $baseDate = \Carbon\Carbon::parse($absen->tanggal, 'Asia/Jakarta')->startOfDay();
+        $baseDate = Carbon::parse($absen->tanggal, 'Asia/Jakarta')->startOfDay();
 
-    if (array_key_exists('jam_masuk', $data)) {
-        $absen->jam_masuk = $data['jam_masuk']
-            ? (clone $baseDate)->setTimeFromTimeString($data['jam_masuk'])
-            : null;
+        if (array_key_exists('jam_masuk', $data)) {
+            $absen->jam_masuk = $data['jam_masuk']
+                ? (clone $baseDate)->setTimeFromTimeString($data['jam_masuk'])
+                : null;
+        }
+
+        if (array_key_exists('jam_pulang', $data)) {
+            $absen->jam_pulang = $data['jam_pulang']
+                ? (clone $baseDate)->setTimeFromTimeString($data['jam_pulang'])
+                : null;
+        }
+
+        if (array_key_exists('status_harian', $data)) $absen->status_harian = $data['status_harian'];
+        if (array_key_exists('catatan', $data))       $absen->catatan       = $data['catatan'];
+
+        $absen->save();
+
+        return back()->with('ok','Absensi diupdate.');
     }
-
-    if (array_key_exists('jam_pulang', $data)) {
-        $absen->jam_pulang = $data['jam_pulang']
-            ? (clone $baseDate)->setTimeFromTimeString($data['jam_pulang'])
-            : null;
-    }
-
-    if (array_key_exists('status_harian', $data)) $absen->status_harian = $data['status_harian'];
-    if (array_key_exists('catatan', $data))       $absen->catatan       = $data['catatan'];
-
-    $absen->save();
-
-    return back()->with('ok','Absensi diupdate.');
-}
-
 
     /**
      * ================== Hapus data ==================

@@ -46,20 +46,30 @@
                                     <td>{{ $a->siswa->kelas->nama_kelas ?? '-' }}</td>
                                     <td>{{ \Carbon\Carbon::parse($a->tanggal)->format('d-m-Y') }}</td>
                                     <td>
-                                        <input type="time" name="jam_masuk" value="{{ $a->jam_masuk ? \Carbon\Carbon::parse($a->jam_masuk)->format('H:i') : '' }}" class="form-control form-control-sm rounded-pill">
+                                        <input type="time"
+                                               name="jam_masuk"
+                                               value="{{ $a->jam_masuk ? \Carbon\Carbon::parse($a->jam_masuk)->format('H:i') : '' }}"
+                                               class="form-control form-control-sm rounded-pill">
                                     </td>
                                     <td>
-                                        <input type="time" name="jam_pulang" value="{{ $a->jam_pulang ? \Carbon\Carbon::parse($a->jam_pulang)->format('H:i') : '' }}" class="form-control form-control-sm rounded-pill">
+                                        <input type="time"
+                                               name="jam_pulang"
+                                               value="{{ $a->jam_pulang ? \Carbon\Carbon::parse($a->jam_pulang)->format('H:i') : '' }}"
+                                               class="form-control form-control-sm rounded-pill">
                                     </td>
                                     <td>
                                         <select name="status_harian" class="form-select form-select-sm rounded-pill">
                                             <option value="HADIR" {{ $a->status_harian == 'HADIR' ? 'selected' : '' }}>Hadir</option>
                                             <option value="SAKIT" {{ $a->status_harian == 'SAKIT' ? 'selected' : '' }}>Sakit</option>
-                                            <option value="ALPA" {{ $a->status_harian == 'ALPA' ? 'selected' : '' }}>Alpa</option>
+                                            <option value="IZIN"  {{ $a->status_harian == 'IZIN'  ? 'selected' : '' }}>Izin</option>
+                                            <option value="ALPA"  {{ $a->status_harian == 'ALPA'  ? 'selected' : '' }}>Alpa</option>
                                         </select>
                                     </td>
                                     <td>
-                                        <input type="text" name="catatan" value="{{ $a->catatan }}" class="form-control form-control-sm rounded-pill">
+                                        <input type="text"
+                                               name="catatan"
+                                               value="{{ $a->catatan }}"
+                                               class="form-control form-control-sm rounded-pill">
                                     </td>
                                     <td>
                                         <button type="submit" class="btn btn-sm btn-success rounded-pill px-3">
@@ -69,12 +79,16 @@
                                 </form>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="text-muted py-3">Belum ada data Presensi.</td></tr>
+                            <tr>
+                                <td colspan="8" class="text-muted py-3">Belum ada data Presensi.</td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-            <div class="mt-3 d-flex justify-content-center">{{ $absensi->links() }}</div>
+            <div class="mt-3 d-flex justify-content-center">
+                {{ $absensi->links() }}
+            </div>
         </div>
     </div>
 </div>

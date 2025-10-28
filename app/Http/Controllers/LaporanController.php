@@ -19,12 +19,25 @@ class LaporanController extends Controller
         $kelas   = $request->query('kelas');
         $status  = $request->query('status');
 
+        // ✅ Tambahan: ambil rentang tanggal (tanggal mulai & tanggal selesai)
+        $tanggalMulai   = $request->query('tanggal_mulai');
+        $tanggalSelesai = $request->query('tanggal_selesai');
+
         // Query utama: ambil absensi + relasi siswa dan kelas
         $query = Absensi::with('siswa.kelas')->orderByDesc('tanggal')->orderByDesc('jam_masuk');
 
-        // Filter tanggal
+        // Filter tanggal tunggal (yang sudah ada)
         if ($tanggal) {
             $query->whereDate('tanggal', $tanggal);
+        }
+
+        // ✅ Tambahan: filter rentang tanggal
+        if ($tanggalMulai && $tanggalSelesai) {
+            $query->whereBetween('tanggal', [$tanggalMulai, $tanggalSelesai]);
+        } elseif ($tanggalMulai) {
+            $query->whereDate('tanggal', '>=', $tanggalMulai);
+        } elseif ($tanggalSelesai) {
+            $query->whereDate('tanggal', '<=', $tanggalSelesai);
         }
 
         // Filter kelas (berdasarkan nama kelas)
@@ -44,11 +57,14 @@ class LaporanController extends Controller
         $daftarKelas = Kelas::orderBy('tingkat')->orderBy('nama_kelas')->pluck('nama_kelas');
 
         return view('laporan.index', [
-            'absensi'     => $absensi,
-            'daftarKelas' => $daftarKelas,
-            'tanggal'     => $tanggal,
-            'kelas'       => $kelas,
-            'status'      => $status,
+            'absensi'         => $absensi,
+            'daftarKelas'     => $daftarKelas,
+            'tanggal'         => $tanggal,
+            'kelas'           => $kelas,
+            'status'          => $status,
+            // ✅ Tambahan variabel untuk view
+            'tanggalMulai'    => $tanggalMulai,
+            'tanggalSelesai'  => $tanggalSelesai,
         ]);
     }
 
