@@ -5,33 +5,86 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Absensi;
 use App\Models\Kelas;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class LaporanController extends Controller
 {
-    /**
-     * Halaman utama laporan kehadiran
-     */
     public function index(Request $request)
     {
-        // Ambil parameter filter
-        $tanggal = $request->query('tanggal');
-        $kelas   = $request->query('kelas');
-        $status  = $request->query('status');
+        // ===== FILTER =====
+        $mode            = $request->query('mode', 'detail'); // 'detail' | 'rekap'
+        $tanggal         = $request->query('tanggal');        // legacy (opsional)
+        $tanggalMulai    = $request->query('tanggal_mulai');
+        $tanggalSelesai  = $request->query('tanggal_selesai');
+        $kelas           = $request->query('kelas');          // nama_kelas
+        $status          = $request->query('status');         // detail-only
 
-        // ✅ Tambahan: ambil rentang tanggal (tanggal mulai & tanggal selesai)
-        $tanggalMulai   = $request->query('tanggal_mulai');
-        $tanggalSelesai = $request->query('tanggal_selesai');
+        // ===== DROPDOWN KELAS =====
+        $daftarKelas = Kelas::orderBy('tingkat')->orderBy('nama_kelas')->pluck('nama_kelas');
 
-        // Query utama: ambil absensi + relasi siswa dan kelas
+        if ($mode === 'rekap') {
+            // =========================
+            // REKAP PER SISWA (H/S/I/A)
+            // =========================
+            $q = DB::table('absensi as a')
+                ->join('siswa as s', 's.nis', '=', 'a.nis')
+                ->leftJoin('kelas as k', 'k.id', '=', 's.kelas_id')
+                ->select([
+                    's.nis',
+                    's.nama',
+                    DB::raw('COALESCE(k.nama_kelas, \'-\') as nama_kelas'),
+                    DB::raw("SUM(CASE WHEN a.status_harian = 'HADIR' THEN 1 ELSE 0 END) AS hadir"),
+                    DB::raw("SUM(CASE WHEN a.status_harian = 'SAKIT' THEN 1 ELSE 0 END) AS sakit"),
+                    DB::raw("SUM(CASE WHEN a.status_harian = 'IZIN'  THEN 1 ELSE 0 END) AS izin"),
+                    DB::raw("SUM(CASE WHEN a.status_harian = 'ALPA'  THEN 1 ELSE 0 END) AS alpa"),
+                    DB::raw("COUNT(*) AS total")
+                ]);
+
+            // filter tanggal tunggal (legacy)
+            if ($tanggal) {
+                $q->whereDate('a.tanggal', $tanggal);
+            }
+
+            // filter rentang tanggal
+            if ($tanggalMulai && $tanggalSelesai) {
+                $q->whereBetween('a.tanggal', [$tanggalMulai, $tanggalSelesai]);
+            } elseif ($tanggalMulai) {
+                $q->whereDate('a.tanggal', '>=', $tanggalMulai);
+            } elseif ($tanggalSelesai) {
+                $q->whereDate('a.tanggal', '<=', $tanggalSelesai);
+            }
+
+            // filter kelas (nama_kelas)
+            if ($kelas) {
+                $q->where('k.nama_kelas', $kelas);
+            }
+
+            $rekap = $q->groupBy('s.nis', 's.nama', 'k.nama_kelas')
+                       ->orderBy('s.nama')
+                       ->paginate(20)
+                       ->withQueryString();
+
+            return view('laporan.index', [
+                'mode'            => 'rekap',
+                'rekap'           => $rekap,
+                'absensi'         => null, // tidak dipakai di rekap
+                'daftarKelas'     => $daftarKelas,
+                'tanggal'         => $tanggal,
+                'kelas'           => $kelas,
+                'status'          => $status, // diabaikan pada rekap
+                'tanggalMulai'    => $tanggalMulai,
+                'tanggalSelesai'  => $tanggalSelesai,
+            ]);
+        }
+
+        // ==============
+        // MODE: DETAIL
+        // ==============
         $query = Absensi::with('siswa.kelas')->orderByDesc('tanggal')->orderByDesc('jam_masuk');
 
-        // Filter tanggal tunggal (yang sudah ada)
         if ($tanggal) {
             $query->whereDate('tanggal', $tanggal);
         }
-
-        // ✅ Tambahan: filter rentang tanggal
         if ($tanggalMulai && $tanggalSelesai) {
             $query->whereBetween('tanggal', [$tanggalMulai, $tanggalSelesai]);
         } elseif ($tanggalMulai) {
@@ -40,40 +93,30 @@ class LaporanController extends Controller
             $query->whereDate('tanggal', '<=', $tanggalSelesai);
         }
 
-        // Filter kelas (berdasarkan nama kelas)
         if ($kelas) {
             $query->whereHas('siswa.kelas', fn($q) => $q->where('nama_kelas', $kelas));
         }
-
-        // Filter status
         if ($status) {
             $query->where('status_harian', $status);
         }
 
-        // Ambil hasilnya
-        $absensi = $query->paginate(20);
-
-        // Ambil daftar kelas untuk dropdown filter
-        $daftarKelas = Kelas::orderBy('tingkat')->orderBy('nama_kelas')->pluck('nama_kelas');
+        $absensi = $query->paginate(20)->withQueryString();
 
         return view('laporan.index', [
+            'mode'            => 'detail',
             'absensi'         => $absensi,
+            'rekap'           => null,
             'daftarKelas'     => $daftarKelas,
             'tanggal'         => $tanggal,
             'kelas'           => $kelas,
             'status'          => $status,
-            // ✅ Tambahan variabel untuk view
             'tanggalMulai'    => $tanggalMulai,
             'tanggalSelesai'  => $tanggalSelesai,
         ]);
     }
 
-    /**
-     * Export laporan ke file (nanti bisa diaktifkan)
-     */
     public function export(Request $request)
     {
-        // Catatan: fitur export (Excel/PDF) bisa ditambahkan nanti.
         return back()->with('ok', 'Fitur export laporan belum diaktifkan.');
     }
 }

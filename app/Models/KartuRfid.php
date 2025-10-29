@@ -18,8 +18,15 @@ class KartuRfid extends Model
         'status_aktif' => 'boolean',
     ];
 
+    // Relasi ke siswa (berdasarkan NIS)
     public function siswa()
     {
         return $this->belongsTo(Siswa::class, 'nis', 'nis');
+    }
+
+    // Aksesori teks status (optional, untuk dipakai di view)
+    public function getStatusTextAttribute(): string
+    {
+        return $this->status_aktif ? 'Aktif' : 'Nonaktif';
     }
 }

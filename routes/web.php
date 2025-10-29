@@ -76,4 +76,8 @@ Route::middleware([
 
     // ===== LOG ADMIN =====
     Route::get('/admin/logs', [AdminLogController::class, 'index'])->name('admin.logs');
+    
+    Route::get('/pengaturan', [PengaturanController::class, 'index'])->name('pengaturan.index');
+    Route::post('/pengaturan', [PengaturanController::class, 'update'])->name('pengaturan.update');
+
 });

@@ -5,16 +5,26 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
-    public function up(): void {
-        Schema::create('kartu_rfid', function (Blueprint $t) {
-            $t->id();
-            $t->string('uid')->unique();
-            $t->string('nis')->nullable()->index();
-            $t->boolean('aktif')->default(true)->index();
-            $t->timestampsTz();
+    public function up(): void
+    {
+        Schema::table('kartu_rfid', function (Blueprint $table) {
+            $table->boolean('status_aktif')->default(true)->after('nis');
+        });
 
-            $t->foreign('nis')->references('nis')->on('siswa')->nullOnDelete();
+        // index unik uid
+        Schema::table('kartu_rfid', function (Blueprint $table) {
+            $table->unique('uid');
+            // $table->unique('nis'); // aktifkan jika 1 siswa hanya boleh 1 kartu
         });
     }
-    public function down(): void { Schema::dropIfExists('kartu_rfid'); }
+
+    public function down(): void
+    {
+        Schema::table('kartu_rfid', function (Blueprint $table) {
+            // Hapus index unik dulu kalau mau rollback
+            $table->dropUnique(['uid']);
+            // $table->dropUnique(['nis']);
+            $table->dropColumn('status_aktif');
+        });
+    }
 };
