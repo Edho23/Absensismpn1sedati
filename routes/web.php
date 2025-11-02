@@ -65,6 +65,7 @@ Route::middleware([
     Route::resource('siswa', SiswaController::class)->only(['index','create','store','edit','update','destroy']);
     Route::resource('kelas', KelasController::class)->only(['index','create','store','edit','update','destroy']);
     Route::resource('kartu', KartuController::class)->only(['index','store','destroy']);
+    Route::post('/kartu/{id}/toggle', [\App\Http\Controllers\KartuController::class, 'toggle'])->name('kartu.toggle');
     Route::resource('perangkat', PerangkatController::class)->only(['index','store','update','destroy']);
 
     // ===== ENDPOINT TYPEAHEAD NIS/NAMA =====
