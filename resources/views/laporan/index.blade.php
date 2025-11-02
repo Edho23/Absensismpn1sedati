@@ -14,7 +14,7 @@
             </a>
             <a href="{{ route('laporan.index', array_merge(request()->query(), ['mode'=>'rekap'])) }}"
                class="btn btn-outline-primary rounded-pill {{ ($mode ?? 'detail')==='rekap' ? 'active' : '' }}">
-               Rekap per Siswa
+               Rekap Per Kelas
             </a>
             <a href="{{ route('laporan.export') }}" class="btn btn-success rounded-pill">
                 <i class="bi bi-download me-2"></i>Unduh Laporan
