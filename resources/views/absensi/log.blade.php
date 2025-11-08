@@ -30,7 +30,7 @@
                         <option value="">Semua Status</option>
                         <option value="HADIR" {{ $status == 'HADIR' ? 'selected' : '' }}>Hadir</option>
                         <option value="SAKIT" {{ $status == 'SAKIT' ? 'selected' : '' }}>Sakit</option>
-                        <option value="IZIN"  {{ $status == 'IZIN'  ? 'selected' : '' }}>Izin</option> {{-- ✅ Tambahan baru --}}
+                        <option value="IZIN"  {{ $status == 'IZIN'  ? 'selected' : '' }}>Izin</option>
                         <option value="ALPA"  {{ $status == 'ALPA'  ? 'selected' : '' }}>Alpa</option>
                     </select>
                 </div>
@@ -56,6 +56,7 @@
                         <th>NIS</th>
                         <th>Nama Siswa</th>
                         <th>Kelas</th>
+                        <th>Kelas Paralel</th> {{-- ▼ kolom baru --}}
                         <th>Tanggal</th>
                         <th>Jam Masuk</th>
                         <th>Jam Pulang</th>
@@ -67,23 +68,25 @@
                 <tbody>
                     @forelse ($absensi as $i => $item)
                         <tr>
-                            <td>{{ $loop->iteration }}</td>
+                            {{-- numbering yang benar saat pagination --}}
+                            <td>{{ $absensi->firstItem() + $i }}</td>
                             <td>{{ $item->siswa->nis ?? '-' }}</td>
                             <td class="text-start">{{ $item->siswa->nama ?? '-' }}</td>
                             <td>{{ $item->siswa->kelas->nama_kelas ?? '-' }}</td>
+                            <td>{{ $item->siswa->kelas->kelas_paralel ?? '-' }}</td> {{-- ▼ paralel --}}
                             <td>{{ \Carbon\Carbon::parse($item->tanggal)->format('d/m/Y') }}</td>
                             <td>
-                                {{ $item->jam_masuk 
-                                    ? \Carbon\Carbon::parse($item->jam_masuk)->format('H:i') 
+                                {{ $item->jam_masuk
+                                    ? \Carbon\Carbon::parse($item->jam_masuk)->format('H:i')
                                     : '-' }}
                             </td>
                             <td>
-                                {{ $item->jam_pulang 
-                                    ? \Carbon\Carbon::parse($item->jam_pulang)->format('H:i') 
+                                {{ $item->jam_pulang
+                                    ? \Carbon\Carbon::parse($item->jam_pulang)->format('H:i')
                                     : '-' }}
                             </td>
                             <td>
-                                <span class="badge {{ $item->sumber === 'MANUAL' ? 'bg-primary' : 'bg-success' }}">
+                                <span class="badge {{ ($item->sumber ?? '') === 'MANUAL' ? 'bg-primary' : 'bg-success' }}">
                                     {{ $item->sumber ?? '-' }}
                                 </span>
                             </td>
@@ -93,7 +96,7 @@
                                 @elseif($item->status_harian === 'SAKIT')
                                     <span class="badge bg-warning text-dark">Sakit</span>
                                 @elseif($item->status_harian === 'IZIN')
-                                    <span class="badge bg-info text-dark">Izin</span> {{-- ✅ Tambahan baru --}}
+                                    <span class="badge bg-info text-dark">Izin</span>
                                 @elseif($item->status_harian === 'ALPA')
                                     <span class="badge bg-danger">Alpa</span>
                                 @else
@@ -104,7 +107,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="text-muted py-3">Tidak ada data absensi ditemukan.</td>
+                            <td colspan="11" class="text-muted py-3">Tidak ada data absensi ditemukan.</td>
                         </tr>
                     @endforelse
                 </tbody>

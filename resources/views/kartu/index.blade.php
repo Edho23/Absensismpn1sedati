@@ -39,7 +39,6 @@
       <form action="{{ route('kartu.store') }}" method="POST" id="form-kartu" autocomplete="off">
         @csrf
 
-        {{-- baris: UID & NIS sejajar --}}
         <div class="row g-3">
           <div class="col-md-6">
             <div class="position-relative">
@@ -60,7 +59,17 @@
           <div class="col-md-6">
             <div class="position-relative">
               <label class="form-label fw-semibold">NIS</label>
-              <input type="text" id="nis" name="nis" class="form-control" placeholder="Ketik NIS atau nama siswa..." required>
+              <input
+                type="text"
+                id="nis"
+                name="nis"
+                class="form-control"
+                placeholder="Ketik NIS atau nama siswa..."
+                required
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+              >
               <div id="nis-suggest" class="typeahead-list" style="display:none;"></div>
             </div>
           </div>
@@ -99,8 +108,8 @@
             <td class="text-start">{{ $k->siswa->nama ?? '-' }}</td>
             <td>{{ $k->siswa->kelas->nama_kelas ?? '-' }}</td>
             <td>
-              <span class="badge {{ $k->status_aktif ? 'bg-success' : 'bg-secondary' }}">
-                {{ $k->status_aktif ? 'Aktif' : 'Nonaktif' }}
+              <span class="badge {{ ($k->status ?? 'A') === 'A' ? 'bg-success' : 'bg-secondary' }}">
+                {{ ($k->status ?? 'A') === 'A' ? 'Aktif' : 'Nonaktif' }}
               </span>
             </td>
             <td>
@@ -119,7 +128,7 @@
       </table>
 
       <div class="mt-3 d-flex justify-content-center">
-        {{ $kartu->links() }}
+        {{ $kartu->links('pagination::bootstrap-5') }}
       </div>
     </div>
   </div>
@@ -127,9 +136,8 @@
 
 @push('styles')
 <style>
-  /* typeahead kecil */
   .typeahead-list{
-    position:absolute; top:68px; left:0; right:0; z-index:1050;
+    position:absolute; top:68px; left:0; right:0; z-index:2000;
     background:#fff; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden;
     box-shadow:0 8px 24px rgba(0,0,0,.08);
     max-height:260px; overflow:auto;
@@ -198,7 +206,6 @@
 
   function normalizeNoColon(uid){
     if (!uid) return '';
-    // buang semua selain hex, lalu uppercase
     const hex = uid.replace(/[^0-9a-fA-F]/g,'').toUpperCase();
     return hex;
   }
@@ -206,7 +213,6 @@
   function startPolling(){
     polling = setInterval(async () => {
       try {
-        // endpoint last register (server kamu)
         const r = await fetch(`${BASE}/api/rfid/register-last`, {cache:'no-store', headers:{'Accept':'application/json'}});
         if (r.ok) {
           const data = await r.json();
@@ -215,13 +221,11 @@
             stopPolling('UID diterima');
           }
         }
-      } catch (e) {
-        // diamkan; UI tetap polling
-      }
+      } catch (e) {}
     }, 800);
   }
 
-  // ===== Typeahead NIS/Nama =====
+  // ===== Typeahead NIS/Nama (pakai WEB route) =====
   const nisInput   = document.getElementById('nis');
   const suggestBox = document.getElementById('nis-suggest');
   let typingTimer = null;
@@ -233,7 +237,17 @@
     typingTimer = setTimeout(()=> searchSiswa(term), 250);
   });
 
-  document.addEventListener('click', (e)=>{
+  // pakai mousedown + delegation supaya tidak kalah oleh blur
+  suggestBox.addEventListener('mousedown', (e) => {
+    const row = e.target.closest('.typeahead-item');
+    if (!row) return;
+    e.preventDefault(); // cegah blur dulu
+    nisInput.value = row.dataset.nis || '';
+    hideSuggest();
+  });
+
+  // hide kalau klik di luar
+  document.addEventListener('mousedown', (e)=>{
     if (!suggestBox.contains(e.target) && e.target !== nisInput) hideSuggest();
   });
 
@@ -243,10 +257,14 @@
 
   async function searchSiswa(term){
     try{
-      const url = `${BASE}/api/siswa/search?term=${encodeURIComponent(term)}`;
+      const url = `{{ route('siswa.search') }}?` + new URLSearchParams({
+        term: term,
+        status: 'A'
+      }).toString();
+
       const r = await fetch(url, {headers:{'Accept':'application/json'}, cache:'no-store'});
       if (!r.ok) throw new Error('search fail');
-      const list = await r.json(); // [{nis,nama,kelas}]
+      const list = await r.json(); // [{nis,nama,kelas,label}]
       if (!Array.isArray(list) || list.length === 0) { hideSuggest(); return; }
 
       suggestBox.innerHTML = list.slice(0,10).map(it => `
@@ -256,13 +274,6 @@
         </div>
       `).join('');
       suggestBox.style.display = 'block';
-
-      [...suggestBox.querySelectorAll('.typeahead-item')].forEach(el=>{
-        el.addEventListener('click', ()=>{
-          nisInput.value = el.dataset.nis;
-          hideSuggest();
-        });
-      });
     }catch(e){
       hideSuggest();
     }

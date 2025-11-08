@@ -3,30 +3,33 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class KartuRfid extends Model
 {
     protected $table = 'kartu_rfid';
 
+    // Sudah bersih: hanya pakai 'status'
     protected $fillable = [
         'uid',
         'nis',
-        'status_aktif',
+        'status',   // 'A' | 'N'
     ];
 
-    protected $casts = [
-        'status_aktif' => 'boolean',
-    ];
-
-    // Relasi ke siswa (berdasarkan NIS)
-    public function siswa()
+    public function siswa(): BelongsTo
     {
         return $this->belongsTo(Siswa::class, 'nis', 'nis');
     }
 
-    // Aksesori teks status (optional, untuk dipakai di view)
+    /** Accessor label untuk badge di view */
     public function getStatusTextAttribute(): string
     {
-        return $this->status_aktif ? 'Aktif' : 'Nonaktif';
+        return $this->status === 'A' ? 'Aktif' : 'Nonaktif';
+    }
+
+    /** Scope cepat ambil kartu aktif */
+    public function scopeAktif($q)
+    {
+        return $q->where('status', 'A');
     }
 }

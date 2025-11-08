@@ -24,10 +24,10 @@ Route::middleware('web')->group(function () {
     Route::get('/login',  [AdminAuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AdminAuthController::class, 'login'])->name('admin.login');
 
-    // Logout (dukung GET/POST agar kompatibel dengan <a> dan <form>)
+    // Logout (dukung GET/POST)
     Route::match(['get','post'], '/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
 
-    // Root -> redirect ke dashboard
+    // Root -> dashboard
     Route::get('/', fn () => redirect()->route('dashboard'));
 });
 
@@ -39,7 +39,7 @@ Route::middleware('web')->group(function () {
 Route::middleware([
     'web',
     'auth:admin',
-    \App\Http\Middleware\LogAdminActivity::class, // alias dari Kernel routeMiddleware
+    \App\Http\Middleware\LogAdminActivity::class,
 ])->group(function () {
 
     // Dashboard
@@ -50,22 +50,20 @@ Route::middleware([
     Route::get('/absensi/input',  [AbsensiController::class, 'index'])->name('absensi.input');
     Route::get('/absensi/edit',   [AbsensiController::class, 'edit'])->name('absensi.edit');
     Route::get('/absensi/log',    [AbsensiController::class, 'log'])->name('absensi.log');
-
     Route::post('/absensi/manual', [AbsensiController::class, 'storeManual'])->name('absensi.manual');
-
-    // Update (pakai PUT di Blade @method('PUT'))
-    Route::put('/absensi/{id}', [AbsensiController::class, 'update'])->name('absensi.update');
-    // Kompat lama (jika masih ada form POST lama)
+    Route::put('/absensi/{id}',    [AbsensiController::class, 'update'])->name('absensi.update');
     Route::post('/absensi/{id}/update', [AbsensiController::class, 'update']);
-
-    // Hapus
     Route::delete('/absensi/{id}', [AbsensiController::class, 'destroy'])->name('absensi.destroy');
 
     // ===== DATA MASTER =====
     Route::resource('siswa', SiswaController::class)->only(['index','create','store','edit','update','destroy']);
+    Route::post('/siswa/promote', [SiswaController::class, 'promote'])->name('siswa.promote');
+
     Route::resource('kelas', KelasController::class)->only(['index','create','store','edit','update','destroy']);
+
     Route::resource('kartu', KartuController::class)->only(['index','store','destroy']);
     Route::post('/kartu/{id}/toggle', [\App\Http\Controllers\KartuController::class, 'toggle'])->name('kartu.toggle');
+
     Route::resource('perangkat', PerangkatController::class)->only(['index','store','update','destroy']);
 
     // ===== ENDPOINT TYPEAHEAD NIS/NAMA =====
@@ -77,8 +75,8 @@ Route::middleware([
 
     // ===== LOG ADMIN =====
     Route::get('/admin/logs', [AdminLogController::class, 'index'])->name('admin.logs');
-    
-    Route::get('/pengaturan', [PengaturanController::class, 'index'])->name('pengaturan.index');
-    Route::post('/pengaturan', [PengaturanController::class, 'update'])->name('pengaturan.update');
 
+    // ===== PENGATURAN =====
+    Route::get('/pengaturan',  [PengaturanController::class, 'index'])->name('pengaturan.index');
+    Route::post('/pengaturan', [PengaturanController::class, 'update'])->name('pengaturan.update');
 });

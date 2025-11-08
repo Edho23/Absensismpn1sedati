@@ -48,7 +48,7 @@ class AbsensiController extends Controller
         $data = $req->validate([
             'nis' => [
                 'required',
-                Rule::exists('siswa', 'nis')->where(fn ($q) => $q->where('status_aktif', 1)),
+                Rule::exists('siswa', 'nis')->where(fn ($q) => $q->where('status', 'A')),
             ],
             'status_harian'  => ['required', Rule::in(['HADIR','SAKIT','ALPA','IZIN'])],
             'catatan'        => ['nullable', 'string'],
@@ -119,10 +119,12 @@ class AbsensiController extends Controller
     public function log(Request $req)
     {
         $tanggal = $req->query('tanggal');     // yyyy-mm-dd
-        $kelas   = $req->query('kelas');       // nama kelas
+        $kelas   = $req->query('kelas');       // nama kelas (filter di dropdown)
         $status  = $req->query('status');      // HADIR/SAKIT/ALPA/IZIN
 
-        $q = Absensi::with('siswa.kelas')->orderByDesc('tanggal')->orderByDesc('jam_masuk');
+        $q = Absensi::with('siswa.kelas')
+            ->orderByDesc('tanggal')
+            ->orderByDesc('jam_masuk');
 
         if ($tanggal) $q->whereDate('tanggal', $tanggal);
         if ($status)  $q->where('status_harian', $status);
@@ -130,9 +132,11 @@ class AbsensiController extends Controller
             $q->whereHas('siswa.kelas', fn($qq) => $qq->where('nama_kelas', $kelas));
         }
 
-        $absensi = $q->paginate(20);
+        $absensi = $q->paginate(20)->withQueryString();
 
-        $daftarKelas = Kelas::orderBy('tingkat')
+        // ▼ Perbaikan utama: jangan pakai 'tingkat' (kolom lama). Urutkan sesuai skema baru.
+        $daftarKelas = Kelas::orderBy('grade')
+            ->orderBy('kelas_paralel')
             ->orderBy('nama_kelas')
             ->pluck('nama_kelas');
 

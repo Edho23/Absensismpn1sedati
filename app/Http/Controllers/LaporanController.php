@@ -19,8 +19,11 @@ class LaporanController extends Controller
         $kelas           = $request->query('kelas');          // nama_kelas
         $status          = $request->query('status');         // detail-only
 
-        // ===== DROPDOWN KELAS =====
-        $daftarKelas = Kelas::orderBy('tingkat')->orderBy('nama_kelas')->pluck('nama_kelas');
+        // ===== DROPDOWN KELAS (urut: grade → paralel → nama) =====
+        $daftarKelas = Kelas::orderBy('grade')
+            ->orderBy('kelas_paralel')
+            ->orderBy('nama_kelas')
+            ->pluck('nama_kelas');
 
         if ($mode === 'rekap') {
             // =========================
@@ -80,7 +83,9 @@ class LaporanController extends Controller
         // ==============
         // MODE: DETAIL
         // ==============
-        $query = Absensi::with('siswa.kelas')->orderByDesc('tanggal')->orderByDesc('jam_masuk');
+        $query = Absensi::with('siswa.kelas')
+            ->orderByDesc('tanggal')
+            ->orderByDesc('jam_masuk');
 
         if ($tanggal) {
             $query->whereDate('tanggal', $tanggal);

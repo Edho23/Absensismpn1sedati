@@ -1,6 +1,5 @@
 {{-- resources/views/kelas/edit.blade.php --}}
 @extends('layouts.app')
-
 @section('title', 'Edit Kelas')
 
 @section('content')
@@ -13,12 +12,13 @@
   </div>
 
   @if ($errors->any())
-    <div class="alert alert-danger">
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
       <ul class="mb-0">
         @foreach ($errors->all() as $err)
           <li>{{ $err }}</li>
         @endforeach
       </ul>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
   @endif
 
@@ -28,16 +28,34 @@
         @csrf
         @method('PUT')
 
-        <div class="col-md-6">
+        <div class="col-md-4">
           <label class="form-label fw-semibold">Nama Kelas</label>
           <input type="text" name="nama_kelas" class="form-control rounded-pill"
                  value="{{ old('nama_kelas', $kelas->nama_kelas) }}" required>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-4">
           <label class="form-label fw-semibold">Wali Kelas</label>
           <input type="text" name="wali_kelas" class="form-control rounded-pill"
                  value="{{ old('wali_kelas', $kelas->wali_kelas) }}" required>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">Grade</label>
+          <select name="grade" class="form-select" required>
+            @foreach([7,8,9] as $g)
+              <option value="{{ $g }}" {{ (int)old('grade',$kelas->grade)===$g ? 'selected':'' }}>{{ $g }}</option>
+            @endforeach
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">Paralel</label>
+          <select name="kelas_paralel" class="form-select" required>
+            @for($i=1;$i<=11;$i++)
+              <option value="{{ $i }}" {{ (int)old('kelas_paralel',$kelas->kelas_paralel)===$i ? 'selected':'' }}>{{ $i }}</option>
+            @endfor
+          </select>
         </div>
 
         <div class="col-12 text-end">

@@ -10,13 +10,12 @@ use App\Models\KartuRfid;
 use App\Models\Siswa;
 use App\Models\Absensi;
 use Carbon\Carbon;
-use Illuminate\Validation\Rule;
 
 class RfidController extends Controller
 {
     /**
      * GET/POST /api/rfid/register-hit?uid=XXXX
-     * Simpan UID terakhir di cache selama 15 detik (untuk ditarik oleh UI Kartu).
+     * Simpan UID terakhir di cache 15 detik (ditarik oleh UI Kartu).
      */
     public function registerHit(Request $r)
     {
@@ -26,11 +25,7 @@ class RfidController extends Controller
         }
 
         // Normalisasi format (A1:B2:C3:D4)
-        $norm = Str::of($uid)
-            ->replace(['-',' '], '')
-            ->upper();
-
-        // Jika sudah ada ":" anggap sudah normal; jika tidak, tambahkan tiap 2
+        $norm = Str::of($uid)->replace(['-',' '], '')->upper();
         if (!$norm->contains(':') && $norm->length() % 2 === 0) {
             $pairs = [];
             for ($i=0; $i < $norm->length(); $i+=2) {
@@ -42,8 +37,6 @@ class RfidController extends Controller
         }
 
         Cache::put('rfid_last_uid', $norm, now()->addSeconds(15));
-
-        // Log ringan (opsional)
         \Log::info('RFID REGISTER HIT', ['uid' => $norm, 'ip' => $r->ip()]);
 
         return response("OK {$norm}", 200);
@@ -51,7 +44,6 @@ class RfidController extends Controller
 
     /**
      * GET /api/rfid/register-last
-     * Ambil UID terakhir dari cache.
      */
     public function registerLast()
     {
@@ -64,8 +56,7 @@ class RfidController extends Controller
 
     /**
      * (Opsional) POST /api/rfid/presence
-     * Body JSON: { "uid": "AA:BB:CC:DD" }
-     * Contoh untuk presensi langsung by UID (bukan register kartu).
+     * Body JSON: { "uid": "AABBCCDD" atau "AA:BB:CC:DD" }
      */
     public function presenceHit(Request $r)
     {
@@ -74,13 +65,16 @@ class RfidController extends Controller
         ]);
 
         $uid = strtoupper(trim($data['uid']));
+        $uid = preg_replace('/[^0-9A-F:]/', '', $uid);
 
-        $kartu = KartuRfid::where('uid', $uid)->where('status_aktif', 1)->first();
+        // Kartu harus aktif ('A')
+        $kartu = KartuRfid::where('uid', $uid)->where('status', 'A')->first();
         if (!$kartu) {
             return response()->json(['ok' => false, 'msg' => 'Kartu tidak terdaftar / nonaktif'], 404);
         }
 
-        $siswa = Siswa::where('nis', $kartu->nis)->where('status_aktif', 1)->first();
+        // Siswa harus aktif ('A')
+        $siswa = Siswa::where('nis', $kartu->nis)->where('status', 'A')->first();
         if (!$siswa) {
             return response()->json(['ok' => false, 'msg' => 'Siswa tidak aktif / tidak ada'], 404);
         }
@@ -90,11 +84,10 @@ class RfidController extends Controller
 
         $absen = Absensi::firstOrNew(['nis' => $siswa->nis, 'tanggal' => $today]);
         if (!$absen->exists) {
-            $absen->sumber = 'RFID';
+            $absen->sumber        = 'RFID';
             $absen->status_harian = 'HADIR';
-            $absen->jam_masuk = $wib;
+            $absen->jam_masuk     = $wib;
         } else {
-            // toggle jam_pulang jika belum
             if (empty($absen->jam_pulang)) {
                 $absen->jam_pulang = $wib;
             }
