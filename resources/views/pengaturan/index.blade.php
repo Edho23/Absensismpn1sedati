@@ -27,7 +27,7 @@
         </div>
     @endif
 
-    <div class="card border-0 shadow-sm rounded-4">
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body">
             <form method="POST" action="{{ route('pengaturan.update') }}" autocomplete="off" class="row g-3">
                 @csrf
@@ -66,6 +66,19 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    {{-- ===================== LOG ADMIN (HIDDEN ACCESS HERE) ===================== --}}
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body d-flex align-items-center justify-content-between">
+            <div>
+                <h6 class="fw-bold mb-1">Log Admin</h6>
+                <small class="text-muted">Riwayat tindakan admin (hapus/ganti/tambah) untuk audit.</small>
+            </div>
+            <a href="{{ route('admin.logs') }}" class="btn btn-outline-primary rounded-pill px-4">
+                <i class="bi bi-shield-lock me-1"></i> Buka Log Admin
+            </a>
         </div>
     </div>
 </div>

@@ -16,7 +16,9 @@
                class="btn btn-outline-primary rounded-pill {{ ($mode ?? 'detail')==='rekap' ? 'active' : '' }}">
                Rekap Per Kelas
             </a>
-            <a href="{{ route('laporan.export') }}" class="btn btn-success rounded-pill">
+            {{-- ✅ Export ikut semua filter (termasuk gender & mode) --}}
+            <a href="{{ route('laporan.export', request()->only(['tanggal_mulai','tanggal_selesai','kelas','status','gender','mode'])) }}"
+               class="btn btn-success rounded-pill">
                 <i class="bi bi-download me-2"></i>Unduh Laporan
             </a>
         </div>
@@ -27,6 +29,7 @@
         <div class="card-body">
             <form method="GET" action="{{ route('laporan.index') }}" class="row g-3 align-items-end">
                 <input type="hidden" name="mode" value="{{ $mode ?? 'detail' }}">
+
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Tanggal Mulai</label>
                     <input type="date" name="tanggal_mulai" value="{{ $tanggalMulai }}" class="form-control">
@@ -35,6 +38,7 @@
                     <label class="form-label fw-semibold">Tanggal Selesai</label>
                     <input type="date" name="tanggal_selesai" value="{{ $tanggalSelesai }}" class="form-control">
                 </div>
+
                 <div class="col-md-2">
                     <label class="form-label fw-semibold">Kelas</label>
                     <select name="kelas" class="form-select">
@@ -46,6 +50,7 @@
                         @endforeach
                     </select>
                 </div>
+
                 {{-- Status hanya relevan untuk DETAIL --}}
                 @if(($mode ?? 'detail') === 'detail')
                     <div class="col-md-2">
@@ -59,6 +64,17 @@
                         </select>
                     </div>
                 @endif
+
+                {{-- ✅ Filter Gender (berlaku untuk DETAIL & REKAP) --}}
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Gender</label>
+                    <select name="gender" class="form-select">
+                        <option value="">Semua</option>
+                        <option value="L" {{ request('gender') === 'L' ? 'selected' : '' }}>Laki-laki</option>
+                        <option value="P" {{ request('gender') === 'P' ? 'selected' : '' }}>Perempuan</option>
+                    </select>
+                </div>
+
                 <div class="col-md-2 d-flex">
                     <button type="submit" class="btn btn-primary w-100 me-2">
                         <i class="bi bi-search me-1"></i>Filter
@@ -113,7 +129,7 @@
         </div>
     </div>
     @else
-    {{-- ========== MODE: DETAIL (ASAL) ========== --}}
+    {{-- ========== MODE: DETAIL ========== --}}
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body table-responsive">
             <table class="table table-hover align-middle text-center">
@@ -122,6 +138,7 @@
                         <th>No</th>
                         <th>NIS</th>
                         <th>Nama Siswa</th>
+                        <th>Gender</th> {{-- ✅ kolom baru --}}
                         <th>Kelas</th>
                         <th>Tanggal</th>
                         <th>Jam Masuk</th>
@@ -133,10 +150,16 @@
                 </thead>
                 <tbody>
                     @forelse ($absensi as $i => $item)
+                        @php
+                            $jkRaw = strtoupper($item->siswa->jenis_kelamin ?? '');
+                            $jk = in_array($jkRaw, ['L','LAKI','LAKI-LAKI']) ? 'Laki-laki' :
+                                  (in_array($jkRaw, ['P','PEREMPUAN']) ? 'Perempuan' : '-');
+                        @endphp
                         <tr>
                             <td>{{ $absensi->firstItem() + $i }}</td>
                             <td>{{ $item->siswa->nis ?? '-' }}</td>
                             <td class="text-start">{{ $item->siswa->nama ?? '-' }}</td>
+                            <td>{{ $jk }}</td> {{-- ✅ tampil gender --}}
                             <td>{{ $item->siswa->kelas->nama_kelas ?? '-' }}</td>
                             <td>{{ \Carbon\Carbon::parse($item->tanggal)->format('d/m/Y') }}</td>
                             <td>{{ $item->jam_masuk ? \Carbon\Carbon::parse($item->jam_masuk)->format('H:i') : '-' }}</td>
@@ -163,7 +186,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="text-muted py-3">Tidak ada data absensi ditemukan.</td>
+                            <td colspan="11" class="text-muted py-3">Tidak ada data absensi ditemukan.</td>
                         </tr>
                     @endforelse
                 </tbody>

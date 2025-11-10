@@ -7,6 +7,7 @@ use Illuminate\Validation\Rule;
 use App\Models\{Absensi, Siswa, Kelas};
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema; // ✅ TAMBAHAN: untuk cek kolom tabel
 
 class AbsensiController extends Controller
 {
@@ -44,7 +45,7 @@ class AbsensiController extends Controller
             'nis' => strtoupper(trim((string) $req->input('nis'))),
         ]);
 
-        // Validasi: siswa aktif saja
+        // Validasi: siswa aktif saja (skema milikmu pakai status='A')
         $data = $req->validate([
             'nis' => [
                 'required',
@@ -134,11 +135,23 @@ class AbsensiController extends Controller
 
         $absensi = $q->paginate(20)->withQueryString();
 
-        // ▼ Perbaikan utama: jangan pakai 'tingkat' (kolom lama). Urutkan sesuai skema baru.
-        $daftarKelas = Kelas::orderBy('grade')
-            ->orderBy('kelas_paralel')
-            ->orderBy('nama_kelas')
-            ->pluck('nama_kelas');
+        // ✅ TAMBAHAN: susun daftarKelas secara dinamis sesuai kolom yang tersedia.
+        // Urutan prioritas: grade -> tingkat -> kelas_paralel -> nama_kelas
+        $kelasQuery = Kelas::query();
+
+        if (Schema::hasColumn('kelas', 'grade')) {
+            $kelasQuery->orderBy('grade');
+        } elseif (Schema::hasColumn('kelas', 'tingkat')) {
+            $kelasQuery->orderBy('tingkat');
+        }
+
+        if (Schema::hasColumn('kelas', 'kelas_paralel')) {
+            $kelasQuery->orderBy('kelas_paralel');
+        }
+
+        $kelasQuery->orderBy('nama_kelas');
+
+        $daftarKelas = $kelasQuery->pluck('nama_kelas');
 
         return view('absensi.log', [
             'absensi'     => $absensi,

@@ -79,15 +79,7 @@
             </a>
         </li>
 
-        {{-- Log Admin --}}
-        <li class="menu-item mb-1">
-            <a href="{{ route('admin.logs') }}" 
-               class="menu-link d-flex align-items-center px-3 py-2 rounded-3 {{ request()->routeIs('admin.logs') ? 'active' : '' }}">
-                <i class="bi bi-journal-text me-3 fs-5"></i>
-                <span class="fw-medium">Log Admin</span>
-            </a>
-        </li>
-
+        
         {{-- Pengaturan --}}
         <li class="menu-item mt-2">
             <a href="{{ route('pengaturan.index') }}"  
