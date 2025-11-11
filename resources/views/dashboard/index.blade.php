@@ -55,7 +55,7 @@
             </div>
         </div>
 
-        {{-- Belum Tapping Hari Ini (Tambahan Baru) --}}
+        {{-- Belum Tapping Hari Ini --}}
         <div class="col-md-3 col-sm-6">
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body text-center py-4">
@@ -71,7 +71,8 @@
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-header bg-white border-0 px-4 py-3">
             <h6 class="fw-semibold text-secondary mb-0">
-                <i class="bi bi-bar-chart-line me-2"></i>Statistik Kehadiran Mingguan
+                <i class="bi bi-bar-chart-line me-2"></i>
+                Statistik Kehadiran Mingguan ({{ $periodeMingguan ?? '-' }})
             </h6>
         </div>
         <div class="card-body px-4 pb-4">
@@ -160,7 +161,7 @@
         options: {
             responsive: true,
             scales: {
-                y: { beginAtZero: true, ticks: { precision:0 } }
+                y: { beginAtZero: true, ticks: { precision: 0 } }
             },
             plugins: {
                 legend: { display: false }

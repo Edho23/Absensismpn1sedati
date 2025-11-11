@@ -24,7 +24,7 @@ class DashboardController extends Controller
             'user'  => 1, // admin tunggal (versi ini)
         ];
 
-        // Label Senin–Jumat minggu berjalan
+        // Label Senin–Jumat minggu berjalan (tetap seperti semula)
         $start = $today->copy()->startOfWeek(Carbon::MONDAY);
         $labels = [];
         $series = [];
@@ -48,6 +48,13 @@ class DashboardController extends Controller
         $sudahAbsenNis = Absensi::whereDate('tanggal', $todayDate)->pluck('nis');
         $belumTapping = Siswa::whereNotIn('nis', $sudahAbsenNis)->count();
 
+        // ==========================
+        // Tambahan: Periode Mingguan untuk judul chart
+        // (Senin s/d Minggu minggu berjalan)
+        // ==========================
+        $startOfWeek = $today->copy()->startOfWeek(Carbon::MONDAY);
+        $endOfWeek   = $today->copy()->endOfWeek(Carbon::SUNDAY);
+        $periodeMingguan = $startOfWeek->translatedFormat('d M Y') . ' - ' . $endOfWeek->translatedFormat('d M Y');
 
         // Kirim ke view
         return view('dashboard.index', compact(
@@ -55,7 +62,8 @@ class DashboardController extends Controller
             'labels',
             'series',
             'logs',
-            'belumTapping'
+            'belumTapping',
+            'periodeMingguan'
         ));
     }
 }

@@ -198,9 +198,12 @@
                       data-bs-target="#edit-{{ $s->id }}">
                 <i class="bi bi-pencil-square"></i>
               </button>
-              <form action="{{ route('siswa.destroy', $s->id) }}" method="POST" onsubmit="return confirm('Hapus siswa ini?')">
+
+              {{-- Hapus → pakai modal konfirmasi --}}
+              <form action="{{ route('siswa.destroy', $s->id) }}" method="POST" class="d-inline form-hapus">
                 @csrf @method('DELETE')
-                <button class="btn btn-sm btn-outline-danger">
+                <button type="button" class="btn btn-sm btn-outline-danger btn-confirm-delete"
+                        data-nama="{{ $s->nama }}">
                   <i class="bi bi-trash"></i>
                 </button>
               </form>
@@ -210,7 +213,7 @@
           {{-- Row edit --}}
           <tr class="collapse" id="edit-{{ $s->id }}">
             <td colspan="8" class="bg-light-subtle">
-              <form action="{{ route('siswa.update', $s->id) }}" method="POST" class="row g-2 align-items-end">
+              <form action="{{ route('siswa.update', $s->id) }}" method="POST" class="row g-2 align-items-end form-edit" data-nama="{{ $s->nama }}">
                 @csrf @method('PUT')
                 <div class="col-md-2">
                   <label class="form-label small text-secondary">NIS</label>
@@ -265,7 +268,8 @@
                 </div>
 
                 <div class="col-md-1 d-grid">
-                  <button class="btn btn-sm btn-success">
+                  {{-- Simpan → tidak langsung submit; konfirmasi dulu --}}
+                  <button type="button" class="btn btn-sm btn-success btn-confirm-edit">
                     <i class="bi bi-save"></i>
                   </button>
                 </div>
@@ -319,6 +323,44 @@
   </div>
 </div>
 
+{{-- ====== MODAL KONFIRMASI EDIT (SAVE) ====== --}}
+<div class="modal fade" id="modalConfirmEdit" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Konfirmasi Simpan Perubahan</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        Simpan perubahan untuk siswa <strong id="editNama"></strong>?
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+        <button type="button" id="btnEditGo" class="btn btn-primary">Ya, Simpan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{-- ====== MODAL KONFIRMASI HAPUS ====== --}}
+<div class="modal fade" id="modalConfirmDelete" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold text-danger">Konfirmasi Hapus</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        Tindakan ini akan <strong>menghapus</strong> data siswa <strong id="deleteNama"></strong> dan tidak dapat dikembalikan. Lanjutkan?
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+        <button type="button" id="btnDeleteGo" class="btn btn-danger">Ya, Hapus</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {{-- ===== TOAST CONTAINER (selalu aktif) ===== --}}
 <div class="toast-container position-fixed top-0 end-0 p-3" id="toastArea" style="z-index: 1080;"></div>
 
@@ -367,11 +409,9 @@ function makeToast(title, message, type){
 }
 
 /** ========= Render session & error sebagai toast ========= */
-// Server success
 @if(session('ok'))
   makeToast('Berhasil', @json(session('ok')), 'success');
 @endif
-// Server validation errors
 @if($errors->any())
   @foreach($errors->all() as $msg)
     makeToast('Error', @json($msg), 'danger');
@@ -458,6 +498,38 @@ document.querySelectorAll('.paralel-edit').forEach(sel => {
     });
     if (target.selectedOptions.length && target.selectedOptions[0].hidden) target.value = '';
   });
+});
+
+/** ====== Konfirmasi HAPUS (modal) ====== */
+const modalDelete = new bootstrap.Modal(document.getElementById('modalConfirmDelete'));
+const spanDeleteNama = document.getElementById('deleteNama');
+let formToDelete = null;
+
+document.querySelectorAll('.btn-confirm-delete').forEach(btn => {
+  btn.addEventListener('click', function () {
+    spanDeleteNama.textContent = this.dataset.nama || '';
+    formToDelete = this.closest('form.form-hapus');
+    modalDelete.show();
+  });
+});
+document.getElementById('btnDeleteGo').addEventListener('click', function () {
+  if (formToDelete) formToDelete.submit();
+});
+
+/** ====== Konfirmasi EDIT (submit inline) ====== */
+const modalEdit = new bootstrap.Modal(document.getElementById('modalConfirmEdit'));
+const spanEditNama = document.getElementById('editNama');
+let formToEdit = null;
+
+document.querySelectorAll('.form-edit .btn-confirm-edit').forEach(btn => {
+  btn.addEventListener('click', function () {
+    formToEdit = this.closest('form.form-edit');
+    spanEditNama.textContent = formToEdit?.dataset?.nama || '';
+    modalEdit.show();
+  });
+});
+document.getElementById('btnEditGo').addEventListener('click', function () {
+  if (formToEdit) formToEdit.submit();
 });
 
 /** Init awal **/

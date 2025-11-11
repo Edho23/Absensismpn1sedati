@@ -64,8 +64,6 @@
 
       <form action="{{ route('kelas.store') }}" method="POST" class="row g-3 align-items-end">
         @csrf
-
-        {{-- Nama Kelas --}}
         <div class="col-md-4">
           <label class="form-label small fw-semibold text-secondary">Nama Kelas</label>
           <div class="input-group shadow-sm rounded-pill">
@@ -77,7 +75,6 @@
           </div>
         </div>
 
-        {{-- Wali Kelas --}}
         <div class="col-md-4">
           <label class="form-label small fw-semibold text-secondary">Wali Kelas</label>
           <div class="input-group shadow-sm rounded-pill">
@@ -89,7 +86,6 @@
           </div>
         </div>
 
-        {{-- Grade --}}
         <div class="col-md-2">
           <label class="form-label small fw-semibold text-secondary">Grade</label>
           <select name="grade" class="form-select" required>
@@ -100,7 +96,6 @@
           </select>
         </div>
 
-        {{-- Kelas Paralel --}}
         <div class="col-md-2">
           <label class="form-label small fw-semibold text-secondary">Paralel</label>
           <select name="kelas_paralel" class="form-select" required>
@@ -111,7 +106,6 @@
           </select>
         </div>
 
-        {{-- Tombol Simpan --}}
         <div class="col-12 text-end">
           <button type="submit" class="btn btn-primary rounded-pill px-4 mt-1">
             <i class="bi bi-plus-circle"></i> Tambah
@@ -153,10 +147,13 @@
                   <a href="{{ route('kelas.edit', $k->id) }}" class="btn btn-sm btn-warning rounded-pill px-3">
                     <i class="bi bi-pencil-square"></i> Edit
                   </a>
-                  <form action="{{ route('kelas.destroy', $k->id) }}" method="POST"
-                        onsubmit="return confirm('Yakin hapus kelas ini?')">
+
+                  {{-- tombol hapus dengan modal --}}
+                  <form action="{{ route('kelas.destroy', $k->id) }}" method="POST" class="d-inline form-hapus-kelas">
                     @csrf @method('DELETE')
-                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                    <button type="button"
+                            class="btn btn-sm btn-outline-danger rounded-pill px-3 btn-confirm-delete-kelas"
+                            data-nama="{{ $k->nama_kelas }}">
                       <i class="bi bi-trash"></i> Hapus
                     </button>
                   </form>
@@ -177,7 +174,50 @@
     </div>
   </div>
 </div>
+
+{{-- ========== MODAL KONFIRMASI HAPUS ========== --}}
+<div class="modal fade" id="modalConfirmDeleteKelas" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold text-danger">Konfirmasi Hapus Kelas</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        Apakah Anda yakin ingin <strong>menghapus</strong> kelas <strong id="deleteNamaKelas"></strong>?
+        <div class="mt-2 small text-muted">
+          Tindakan ini permanen. Pastikan kelas ini tidak lagi terpakai pada data siswa.
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+        <button type="button" id="btnDeleteKelasGo" class="btn btn-danger">Ya, Hapus</button>
+      </div>
+    </div>
+  </div>
+</div>
 @endsection
+
+@push('scripts')
+<script>
+  // ====== Modal Konfirmasi Hapus Kelas ======
+  const modalDeleteKelas = new bootstrap.Modal(document.getElementById('modalConfirmDeleteKelas'));
+  const spanDeleteNamaKelas = document.getElementById('deleteNamaKelas');
+  let formDeleteKelas = null;
+
+  document.querySelectorAll('.btn-confirm-delete-kelas').forEach(btn => {
+    btn.addEventListener('click', function () {
+      spanDeleteNamaKelas.textContent = this.dataset.nama || '';
+      formDeleteKelas = this.closest('form.form-hapus-kelas');
+      modalDeleteKelas.show();
+    });
+  });
+
+  document.getElementById('btnDeleteKelasGo').addEventListener('click', function () {
+    if (formDeleteKelas) formDeleteKelas.submit();
+  });
+</script>
+@endpush
 
 @push('styles')
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">

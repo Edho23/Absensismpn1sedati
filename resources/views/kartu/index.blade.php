@@ -15,6 +15,7 @@
     </div>
   </div>
 
+  {{-- ALERT --}}
   @if(session('ok'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">
       {{ session('ok') }}
@@ -113,9 +114,11 @@
               </span>
             </td>
             <td>
-              <form method="POST" action="{{ route('kartu.destroy', $k->id) }}" onsubmit="return confirm('Hapus kartu ini?')">
+              <form method="POST" action="{{ route('kartu.destroy', $k->id) }}" class="d-inline form-hapus-kartu">
                 @csrf @method('DELETE')
-                <button class="btn btn-sm btn-outline-danger">
+                <button type="button"
+                        class="btn btn-sm btn-outline-danger btn-confirm-delete-kartu"
+                        data-uid="{{ $k->uid }}">
                   <i class="bi bi-trash"></i>
                 </button>
               </form>
@@ -129,6 +132,28 @@
 
       <div class="mt-3 d-flex justify-content-center">
         {{ $kartu->links('pagination::bootstrap-5') }}
+      </div>
+    </div>
+  </div>
+</div>
+
+{{-- ===== Modal Konfirmasi Hapus ===== --}}
+<div class="modal fade" id="modalConfirmDeleteKartu" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold text-danger">Konfirmasi Hapus Kartu</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        Apakah Anda yakin ingin <strong>menghapus</strong> kartu dengan UID: <strong id="deleteUidKartu"></strong>?
+        <div class="mt-2 small text-muted">
+          Tindakan ini bersifat permanen dan tidak dapat dibatalkan.
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+        <button type="button" id="btnDeleteKartuGo" class="btn btn-danger">Ya, Hapus</button>
       </div>
     </div>
   </div>
@@ -237,16 +262,14 @@
     typingTimer = setTimeout(()=> searchSiswa(term), 250);
   });
 
-  // pakai mousedown + delegation supaya tidak kalah oleh blur
   suggestBox.addEventListener('mousedown', (e) => {
     const row = e.target.closest('.typeahead-item');
     if (!row) return;
-    e.preventDefault(); // cegah blur dulu
+    e.preventDefault();
     nisInput.value = row.dataset.nis || '';
     hideSuggest();
   });
 
-  // hide kalau klik di luar
   document.addEventListener('mousedown', (e)=>{
     if (!suggestBox.contains(e.target) && e.target !== nisInput) hideSuggest();
   });
@@ -264,7 +287,7 @@
 
       const r = await fetch(url, {headers:{'Accept':'application/json'}, cache:'no-store'});
       if (!r.ok) throw new Error('search fail');
-      const list = await r.json(); // [{nis,nama,kelas,label}]
+      const list = await r.json();
       if (!Array.isArray(list) || list.length === 0) { hideSuggest(); return; }
 
       suggestBox.innerHTML = list.slice(0,10).map(it => `
@@ -278,6 +301,23 @@
       hideSuggest();
     }
   }
+
+  // ====== Modal Konfirmasi Hapus Kartu ======
+  const modalDeleteKartu = new bootstrap.Modal(document.getElementById('modalConfirmDeleteKartu'));
+  const spanDeleteUidKartu = document.getElementById('deleteUidKartu');
+  let formDeleteKartu = null;
+
+  document.querySelectorAll('.btn-confirm-delete-kartu').forEach(btn => {
+    btn.addEventListener('click', function(){
+      spanDeleteUidKartu.textContent = this.dataset.uid || '';
+      formDeleteKartu = this.closest('form.form-hapus-kartu');
+      modalDeleteKartu.show();
+    });
+  });
+
+  document.getElementById('btnDeleteKartuGo').addEventListener('click', function(){
+    if(formDeleteKartu) formDeleteKartu.submit();
+  });
 })();
 </script>
 @endpush

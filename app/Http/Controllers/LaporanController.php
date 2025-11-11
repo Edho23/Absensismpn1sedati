@@ -7,16 +7,13 @@ use App\Models\Absensi;
 use App\Models\Kelas;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema; // ✅ untuk cek kolom tabel
+use Illuminate\Support\Facades\Schema;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\LaporanRekapExport;
 
 class LaporanController extends Controller
 {
-    /**
-     * Tentukan nama kolom gender di tabel siswa secara dinamis.
-     * Mengembalikan null bila tidak ada kolom yang cocok.
-     */
+    /** 🔹 Deteksi kolom gender di tabel siswa */
     private function genderColumnName(): ?string
     {
         $candidates = ['jenis_kelamin', 'jk', 'gender', 'kelamin', 'jns_kelamin'];
@@ -28,47 +25,46 @@ class LaporanController extends Controller
         return null;
     }
 
-    /**
-     * Terapkan filter gender ke relasi siswa jika kolomnya tersedia.
-     * $gender: 'L' atau 'P'
-     */
+    /** 🔹 Terapkan filter gender ke relasi siswa */
     private function applyGenderFilterToSiswaRelation($relationQuery, ?string $gender): void
     {
         if (!$gender) return;
-
         $col = $this->genderColumnName();
-        if (!$col) return; // kolom gender tidak ada → jangan terapkan filter
+        if (!$col) return;
 
         if ($gender === 'L') {
-            $relationQuery->whereIn(
-                DB::raw("UPPER($col)"),
-                ['L', 'LAKI', 'LAKI-LAKI']
-            );
+            $relationQuery->whereIn(DB::raw("UPPER($col)"), ['L', 'LAKI', 'LAKI-LAKI']);
         } elseif ($gender === 'P') {
-            $relationQuery->whereIn(
-                DB::raw("UPPER($col)"),
-                ['P', 'PEREMPUAN']
-            );
+            $relationQuery->whereIn(DB::raw("UPPER($col)"), ['P', 'PEREMPUAN']);
         }
     }
 
-    /**
-     * Halaman utama laporan kehadiran (dengan filter rentang tanggal + kelas + status + gender)
-     */
+    /** 🔹 Deteksi kolom foreign key antara siswa dan kelas */
+    private function kelasRelasiColumn(): ?string
+    {
+        foreach (['id_kelas', 'kelas_id', 'kelas'] as $col) {
+            if (Schema::hasColumn('siswa', $col)) {
+                return $col;
+            }
+        }
+        return null;
+    }
+
+    /** =========================== INDEX =========================== */
     public function index(Request $request)
     {
-        // Ambil parameter filter
         $tanggalMulai   = $request->query('tanggal_mulai');
         $tanggalSelesai = $request->query('tanggal_selesai');
         $kelas          = $request->query('kelas');
         $status         = $request->query('status');
-        $gender         = $request->query('gender'); // 'L' / 'P' (opsional)
-        $mode           = $request->query('mode', 'detail'); // 'detail' atau 'rekap'
+        $gender         = $request->query('gender');
+        $mode           = $request->query('mode', 'detail');
 
-        // Query utama
-        $query = Absensi::with('siswa.kelas')->orderByDesc('tanggal')->orderByDesc('jam_masuk');
+        $query = Absensi::with('siswa.kelas')
+            ->orderByDesc('tanggal')
+            ->orderByDesc('jam_masuk');
 
-        // Filter tanggal range / single
+        // Filter tanggal
         if ($tanggalMulai && $tanggalSelesai) {
             $query->whereBetween(DB::raw('DATE(tanggal)'), [$tanggalMulai, $tanggalSelesai]);
         } elseif ($tanggalMulai) {
@@ -77,30 +73,41 @@ class LaporanController extends Controller
             $query->whereDate('tanggal', $tanggalSelesai);
         }
 
-        // Filter kelas (nama kelas)
+        // Filter kelas
         if ($kelas) {
             $query->whereHas('siswa.kelas', fn($q) => $q->where('nama_kelas', $kelas));
         }
 
-        // Filter status (mode detail saja, tapi aman jika terisi)
+        // Filter status
         if ($status) {
             $query->where('status_harian', $status);
         }
 
-        // ✅ Filter gender (hanya jika kolom gender ada)
+        // Filter gender
         if ($gender) {
             $query->whereHas('siswa', function ($q) use ($gender) {
                 $this->applyGenderFilterToSiswaRelation($q, $gender);
             });
         }
 
+        /** =========================== MODE REKAP =========================== */
         if ($mode === 'rekap') {
-            // Rekap per siswa dalam rentang/filter
-            $rekap = $query->clone()
+            $kelasRelasiCol = $this->kelasRelasiColumn() ?? 'kelas_id';
+
+            // Penting: hapus orderBy bawaan (tanggal, jam_masuk) sebelum agregasi
+            $rekap = (clone $query)
+                ->reorder()
                 ->select([
                     'nis',
                     DB::raw("MAX((SELECT nama FROM siswa s WHERE s.nis = absensi.nis)) AS nama"),
-                    DB::raw("MAX((SELECT nama_kelas FROM kelas k JOIN siswa s2 ON s2.id_kelas=k.id WHERE s2.nis = absensi.nis)) AS nama_kelas"),
+                    DB::raw("
+                        MAX((
+                            SELECT nama_kelas 
+                            FROM kelas k 
+                            JOIN siswa s2 ON s2.$kelasRelasiCol = k.id
+                            WHERE s2.nis = absensi.nis
+                        )) AS nama_kelas
+                    "),
                     DB::raw("SUM(CASE WHEN status_harian='HADIR' THEN 1 ELSE 0 END) AS hadir"),
                     DB::raw("SUM(CASE WHEN status_harian='SAKIT' THEN 1 ELSE 0 END) AS sakit"),
                     DB::raw("SUM(CASE WHEN status_harian='IZIN'  THEN 1 ELSE 0 END) AS izin"),
@@ -108,11 +115,11 @@ class LaporanController extends Controller
                     DB::raw("COUNT(*) AS total"),
                 ])
                 ->groupBy('nis')
+                // Urutkan pakai alias yang memang ada di SELECT
                 ->orderBy('nama_kelas')
                 ->orderBy('nama')
                 ->paginate(20);
 
-            // Daftar kelas untuk dropdown (tanpa 'tingkat' agar aman di skema apa pun)
             $daftarKelas = Kelas::orderBy('nama_kelas')->pluck('nama_kelas');
 
             return view('laporan.index', [
@@ -128,10 +135,8 @@ class LaporanController extends Controller
             ]);
         }
 
-        // Mode detail
+        /** =========================== MODE DETAIL =========================== */
         $absensi = $query->paginate(20);
-
-        // Daftar kelas untuk dropdown
         $daftarKelas = Kelas::orderBy('nama_kelas')->pluck('nama_kelas');
 
         return view('laporan.index', [
@@ -147,15 +152,13 @@ class LaporanController extends Controller
         ]);
     }
 
-    /**
-     * Export rekap (menghormati filter: rentang tanggal, kelas, gender)
-     */
+    /** =========================== EXPORT =========================== */
     public function export(Request $request)
     {
         $mulai   = $request->query('tanggal_mulai');
         $selesai = $request->query('tanggal_selesai');
-        $kelas   = $request->query('kelas');   // nama_kelas
-        $gender  = $request->query('gender');  // 'L' / 'P' (opsional)
+        $kelas   = $request->query('kelas');
+        $gender  = $request->query('gender');
 
         $base = Absensi::query()->with('siswa.kelas');
 
@@ -182,7 +185,7 @@ class LaporanController extends Controller
             $base->whereHas('siswa.kelas', fn($q) => $q->where('nama_kelas', $kelas));
         }
 
-        // ✅ Filter gender (hanya jika kolom gender ada)
+        // Filter gender
         if ($gender) {
             $base->whereHas('siswa', function ($q) use ($gender) {
                 $this->applyGenderFilterToSiswaRelation($q, $gender);
@@ -190,7 +193,7 @@ class LaporanController extends Controller
             $kelasText .= $gender === 'L' ? ' | Gender: Laki-laki' : ' | Gender: Perempuan';
         }
 
-        // Rekap per status
+        // Rekap per status (untuk Excel)
         $rekap = (clone $base)
             ->select('status_harian', DB::raw('COUNT(*) as total'))
             ->groupBy('status_harian')
