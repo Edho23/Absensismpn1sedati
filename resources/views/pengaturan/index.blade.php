@@ -27,6 +27,7 @@
         </div>
     @endif
 
+    {{-- ====== Profil Admin (as is) ====== --}}
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body">
             <form method="POST" action="{{ route('pengaturan.update') }}" autocomplete="off" class="row g-3">
@@ -69,8 +70,82 @@
         </div>
     </div>
 
-    {{-- ===================== LOG ADMIN (HIDDEN ACCESS HERE) ===================== --}}
+    {{-- ====== Hari Libur Sekolah ====== --}}
     <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="fw-bold mb-1"><i class="bi bi-calendar-x me-2"></i>Hari Libur Sekolah</h5>
+                    <small class="text-muted">Tanggal yang ditandai sebagai hari libur akan diwarnai merah pada laporan absen bulanan dan tidak dihitung ke rekap.</small>
+                </div>
+            </div>
+
+            <form action="{{ route('pengaturan.hari_libur.store') }}" method="POST" class="row g-3 align-items-end mb-3">
+                @csrf
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Tanggal</label>
+                    <input type="date" name="tanggal" class="form-control" required>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label fw-semibold">Nama Hari Libur</label>
+                    <input type="text" name="nama" class="form-control" placeholder="Contoh: Hari Guru Nasional" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Berulang Tiap Tahun?</label>
+                    <select name="berulang" class="form-select">
+                        <option value="1">Ya</option>
+                        <option value="0">Tidak</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-success w-100 rounded-pill">
+                        <i class="bi bi-plus-circle me-1"></i> Tambah
+                    </button>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr class="text-center">
+                            <th style="width:70px">#</th>
+                            <th>Tanggal</th>
+                            <th>Nama</th>
+                            <th>Berulang</th>
+                            <th style="width:120px">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($libur as $i => $h)
+                            <tr>
+                                <td class="text-center">{{ $i+1 }}</td>
+                                <td>{{ \Carbon\Carbon::parse($h->tanggal)->format('d/m/Y') }}</td>
+                                <td>{{ $h->nama }}</td>
+                                <td class="text-center">
+                                    <span class="badge {{ $h->berulang ? 'bg-primary' : 'bg-secondary' }}">
+                                        {{ $h->berulang ? 'Ya' : 'Tidak' }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <form action="{{ route('pengaturan.hari_libur.destroy',$h->id) }}" method="POST" onsubmit="return confirm('Hapus hari libur ini?')">
+                                        @csrf @method('DELETE')
+                                        <button class="btn btn-sm btn-outline-danger rounded-pill">
+                                            <i class="bi bi-trash"></i> Hapus
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="5" class="text-center text-muted">Belum ada data hari libur.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {{-- (opsional) Log admin --}}
+    <div class="card border-0 shadow-sm rounded-4 mt-4">
         <div class="card-body d-flex align-items-center justify-content-between">
             <div>
                 <h6 class="fw-bold mb-1">Log Admin</h6>

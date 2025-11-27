@@ -38,7 +38,7 @@ class DashboardController extends Controller
         $logs = Absensi::with(['siswa.kelas'])
             ->whereDate('tanggal', $today->toDateString())
             ->latest('updated_at')
-            ->limit(10)
+            ->limit(20)
             ->get();
 
         // ==========================

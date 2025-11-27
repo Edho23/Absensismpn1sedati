@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use App\Models\HariLibur;
 
 class PengaturanController extends Controller
 {
@@ -12,8 +13,13 @@ class PengaturanController extends Controller
     {
         $admin = auth('admin')->user();
 
+        // ambil list hari libur untuk ditampilkan
+        $libur = HariLibur::orderBy('berulang','desc')
+                 ->orderBy('tanggal','asc')->get();
+
         return view('pengaturan.index', [
             'admin' => $admin,
+            'libur' => $libur,
         ]);
     }
 
@@ -27,12 +33,10 @@ class PengaturanController extends Controller
             'password'             => ['nullable','string','min:8','confirmed'], // needs password_confirmation
         ]);
 
-        // Update username jika berubah
         if ($admin->username !== $request->username) {
             $admin->username = $request->username;
         }
 
-        // Jika user mengisi field password baru → wajib isi current_password valid
         if ($request->filled('password')) {
             if (!$request->filled('current_password') || !Hash::check($request->current_password, $admin->password)) {
                 return back()->withErrors(['current_password' => 'Password lama tidak cocok.'])->withInput();
@@ -43,5 +47,30 @@ class PengaturanController extends Controller
         $admin->save();
 
         return back()->with('ok', 'Profil berhasil diperbarui.');
+    }
+
+    // ====================== HARI LIBUR ======================
+
+    public function storeHoliday(Request $request)
+    {
+        $request->validate([
+            'tanggal'  => ['required','date'],
+            'nama'     => ['required','string','max:100'],
+            'berulang' => ['required','in:0,1'],
+        ]);
+
+        HariLibur::create([
+            'tanggal'  => $request->tanggal,
+            'nama'     => $request->nama,
+            'berulang' => (bool)$request->berulang,
+        ]);
+
+        return back()->with('ok', 'Hari libur berhasil ditambahkan.');
+    }
+
+    public function destroyHoliday($id)
+    {
+        HariLibur::whereKey($id)->delete();
+        return back()->with('ok', 'Hari libur dihapus.');
     }
 }

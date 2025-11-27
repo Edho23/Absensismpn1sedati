@@ -1,12 +1,25 @@
 <?php
 
 return [
-    // Aturan jam produksi
-    'masuk_min'            => '07:00', // minimal jam masuk
-    'telat_at'             => '07:20', // mulai dianggap terlambat
-    'pulang_min_weekday'   => '15:30', // Senin–Kamis
-    'pulang_min_fri_sat'   => '12:00', // Jumat–Sabtu
+    'timezone' => 'Asia/Jakarta',
 
-    // Mode uji global (env). Jika true: selalu abaikan aturan jam.
-    'bypass_time'          => env('ATTENDANCE_BYPASS_TIME', false),
+    'cutoff' => [
+        'mon' => '06:55',
+        'tue' => '06:55',
+        'wed' => '06:55',
+        'thu' => '06:55',
+        'fri' => '06:55',
+        'sat' => '15:10',
+        'sun' => null,
+    ],
+
+    'dismissal' => [
+        'mon' => '15:30',
+        'tue' => '15:30',
+        'wed' => '15:30',
+        'thu' => '15:30',
+        'fri' => '10:50',
+        'sat' => '15:20',
+        'sun' => null,
+    ],
 ];

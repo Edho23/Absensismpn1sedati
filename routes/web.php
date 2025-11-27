@@ -46,14 +46,19 @@ Route::middleware([
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // ===== ABSENSI =====
-    Route::get('/absensi',        [AbsensiController::class, 'index'])->name('absensi.index');
-    Route::get('/absensi/input',  [AbsensiController::class, 'index'])->name('absensi.input');
-    Route::get('/absensi/edit',   [AbsensiController::class, 'edit'])->name('absensi.edit');
-    Route::get('/absensi/log',    [AbsensiController::class, 'log'])->name('absensi.log');
+    Route::get('/absensi',         [AbsensiController::class, 'index'])->name('absensi.index');
+    Route::get('/absensi/input',   [AbsensiController::class, 'index'])->name('absensi.input');
+    Route::get('/absensi/edit',    [AbsensiController::class, 'edit'])->name('absensi.edit');
+    Route::get('/absensi/log',     [AbsensiController::class, 'log'])->name('absensi.log');
     Route::post('/absensi/manual', [AbsensiController::class, 'storeManual'])->name('absensi.manual');
     Route::put('/absensi/{id}',    [AbsensiController::class, 'update'])->name('absensi.update');
     Route::post('/absensi/{id}/update', [AbsensiController::class, 'update']);
     Route::delete('/absensi/{id}', [AbsensiController::class, 'destroy'])->name('absensi.destroy');
+
+    // NEW: bulk & inline updates
+    Route::post('/absensi/bulk-update', [AbsensiController::class, 'bulkUpdate'])->name('absensi.bulk');
+    Route::post('/absensi/inline-update', [AbsensiController::class, 'inlineUpdate'])->name('absensi.inline');
+
 
     // ===== DATA MASTER =====
     Route::resource('siswa', SiswaController::class)->only(['index','create','store','edit','update','destroy']);
@@ -77,8 +82,13 @@ Route::middleware([
     Route::get('/admin/logs', [AdminLogController::class, 'index'])->name('admin.logs');
     Route::get('/pengaturan/admin-logs', fn() => redirect()->route('admin.logs'))->name('pengaturan.adminlogs');
 
-
     // ===== PENGATURAN =====
     Route::get('/pengaturan',  [PengaturanController::class, 'index'])->name('pengaturan.index');
     Route::post('/pengaturan', [PengaturanController::class, 'update'])->name('pengaturan.update');
+
+    // ===== HARI LIBUR (BARU) =====
+    Route::post('/pengaturan/hari-libur', [PengaturanController::class, 'storeHoliday'])
+        ->name('pengaturan.hari_libur.store');
+    Route::delete('/pengaturan/hari-libur/{id}', [PengaturanController::class, 'destroyHoliday'])
+        ->name('pengaturan.hari_libur.destroy');
 });
