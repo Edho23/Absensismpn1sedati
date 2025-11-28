@@ -5,8 +5,10 @@
 @section('content')
 <div class="container-fluid px-4 py-3">
     {{-- HEADER --}}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold text-primary mb-0">📝 Input Manual Presensi</h3>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h3 class="fw-bold text-primary mb-0">
+            <i class="bi bi-journal-plus me-2"></i>Input Manual Presensi
+        </h3>
     </div>
 
     {{-- ALERT SUKSES --}}
@@ -31,13 +33,28 @@
 
     {{-- ================== FORM INPUT MANUAL ================== --}}
     <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body">
-            <h6 class="fw-bold text-secondary mb-3">Tambah Presensi Manual Hari Ini</h6>
+        <div class="card-header bg-white border-0 px-4 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="fw-bold text-secondary mb-0">
+                    <i class="bi bi-person-plus-fill text-primary me-2"></i>
+                    Tambah Presensi Manual Hari Ini
+                </h6>
+                <small class="text-muted">
+                    Tanggal: {{ \Carbon\Carbon::now('Asia/Jakarta')->translatedFormat('l, d M Y') }}
+                </small>
+            </div>
+            <span class="badge bg-primary-subtle text-primary">
+                Digunakan untuk siswa yang lupa tapping / kasus khusus
+            </span>
+        </div>
+
+        <div class="card-body px-4 pb-4 pt-3">
             <form action="{{ route('absensi.manual') }}" method="POST" autocomplete="off">
                 @csrf
-                <div class="row g-3 align-items-center">
+                <div class="row g-3 align-items-end">
+
                     {{-- NIS dengan Typeahead --}}
-                    <div class="col-md-5 position-relative">
+                    <div class="col-lg-5 col-md-6 position-relative">
                         <label class="form-label fw-semibold small text-secondary">NIS / Nama</label>
                         <input type="text"
                                name="nis"
@@ -47,10 +64,13 @@
                                value="{{ old('nis') }}"
                                required>
                         <div id="nis-suggest" class="typeahead-list" style="display:none;"></div>
+                        <small class="text-muted d-block mt-1">
+                            Pilih siswa dari daftar saran agar NIS tepat.
+                        </small>
                     </div>
 
                     {{-- Status --}}
-                    <div class="col-md-3">
+                    <div class="col-lg-3 col-md-6">
                         <label class="form-label fw-semibold small text-secondary">Status Kehadiran</label>
                         <select name="status_harian" class="form-select form-select-sm rounded-3" required>
                             <option value="HADIR" {{ old('status_harian')==='HADIR' ? 'selected':'' }}>Hadir</option>
@@ -61,18 +81,20 @@
                     </div>
 
                     {{-- Catatan --}}
-                    <div class="col-md-3">
+                    <div class="col-lg-3 col-md-8">
                         <label class="form-label fw-semibold small text-secondary">Catatan</label>
                         <input type="text"
                                name="catatan"
                                class="form-control form-control-sm rounded-3"
-                               placeholder="(boleh kosong)"
+                               placeholder="Misal: lupa kartu, izin terlambat, dsb. (boleh kosong)"
                                value="{{ old('catatan') }}">
                     </div>
 
                     {{-- Submit --}}
-                    <div class="col-md-1 text-md-end text-start mt-3 mt-md-0">
-                        <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4">Simpan</button>
+                    <div class="col-lg-1 col-md-4 d-grid mt-2 mt-lg-0">
+                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 py-2">
+                            <i class="bi bi-save me-1"></i>Simpan
+                        </button>
                     </div>
                 </div>
             </form>
@@ -83,6 +105,7 @@
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-header bg-white border-0 py-3 px-4">
             <h6 class="fw-semibold text-secondary mb-0">
+                <i class="bi bi-list-check me-2"></i>
                 Daftar Presensi Hari Ini ({{ \Carbon\Carbon::parse($tanggal)->format('d M Y') }})
             </h6>
         </div>
@@ -105,7 +128,7 @@
                             <tr>
                                 <td>{{ $absensi->firstItem() + $i }}</td>
                                 <td>{{ $a->siswa->nis ?? '-' }}</td>
-                                <td>{{ $a->siswa->nama ?? '-' }}</td>
+                                <td class="text-start">{{ $a->siswa->nama ?? '-' }}</td>
                                 <td>{{ $a->siswa->kelas->nama_kelas ?? '-' }}</td>
                                 <td>
                                     <span class="badge
@@ -118,7 +141,7 @@
                                     </span>
                                 </td>
                                 <td>{{ $a->jam_masuk ? \Carbon\Carbon::parse($a->jam_masuk)->format('H:i') : '-' }}</td>
-                                <td>{{ $a->catatan ?? '-' }}</td>
+                                <td class="text-start">{{ $a->catatan ?? '-' }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -144,7 +167,11 @@
     .form-control-sm, .form-select-sm { font-size: 13px; border-radius: 8px; padding: 6px 10px; }
     .btn-sm { font-size: 13px; }
     .table { font-size: 13px; }
-    .table th, .table td { vertical-align: middle !important; padding-top: 8px !important; padding-bottom: 8px !important; }
+    .table th, .table td {
+        vertical-align: middle !important;
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+    }
     .card { border-radius: 10px; }
     .btn-primary { background-color: #0d6efd; border: none; }
     .btn-primary:hover { background-color: #0b5ed7; }

@@ -9,12 +9,12 @@
     </h3>
 
     {{-- ======= Statistik Kartu Utama ======= --}}
-    <div class="row g-4 mb-4">
+    <div class="row g-4 mb-4 align-items-stretch">
 
         {{-- Total Siswa --}}
-        <div class="col-md-3 col-sm-6">
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body text-center py-4">
+        <div class="col-md-3 col-sm-6 d-flex">
+            <div class="card border-0 shadow-sm rounded-4 h-100 w-100">
+                <div class="card-body text-center py-4 d-flex flex-column justify-content-center">
                     <i class="bi bi-people-fill text-primary fs-2 mb-2"></i>
                     <h5 class="fw-bold mb-1">{{ $cards['siswa'] ?? 0 }}</h5>
                     <small class="text-muted">Total Siswa</small>
@@ -23,9 +23,9 @@
         </div>
 
         {{-- Total Kelas --}}
-        <div class="col-md-3 col-sm-6">
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body text-center py-4">
+        <div class="col-md-3 col-sm-6 d-flex">
+            <div class="card border-0 shadow-sm rounded-4 h-100 w-100">
+                <div class="card-body text-center py-4 d-flex flex-column justify-content-center">
                     <i class="bi bi-journal-bookmark-fill text-success fs-2 mb-2"></i>
                     <h5 class="fw-bold mb-1">{{ $cards['kelas'] ?? 0 }}</h5>
                     <small class="text-muted">Total Kelas</small>
@@ -34,9 +34,9 @@
         </div>
 
         {{-- Total Kartu RFID --}}
-        <div class="col-md-3 col-sm-6">
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body text-center py-4">
+        <div class="col-md-3 col-sm-6 d-flex">
+            <div class="card border-0 shadow-sm rounded-4 h-100 w-100">
+                <div class="card-body text-center py-4 d-flex flex-column justify-content-center">
                     <i class="bi bi-credit-card-2-front-fill text-warning fs-2 mb-2"></i>
                     <h5 class="fw-bold mb-1">{{ $cards['kartu'] ?? 0 }}</h5>
                     <small class="text-muted">Total Kartu RFID</small>
@@ -44,27 +44,17 @@
             </div>
         </div>
 
-        {{-- Jumlah User (Admin) --}}
-        <div class="col-md-3 col-sm-6">
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body text-center py-4">
-                    <i class="bi bi-person-badge-fill text-info fs-2 mb-2"></i>
-                    <h5 class="fw-bold mb-1">{{ $cards['user'] ?? 1 }}</h5>
-                    <small class="text-muted">Jumlah Admin</small>
-                </div>
-            </div>
-        </div>
-
         {{-- Belum Tapping Hari Ini --}}
-        <div class="col-md-3 col-sm-6">
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body text-center py-4">
-                    <i class="bi bi-exclamation-circle-fill text-secondary fs-2 mb-2"></i>
+        <div class="col-md-3 col-sm-6 d-flex">
+            <div class="card border-0 shadow-sm rounded-4 h-100 w-100">
+                <div class="card-body text-center py-4 d-flex flex-column justify-content-center">
+                    <i class="bi bi-exclamation-circle-fill text-danger fs-2 mb-2"></i>
                     <h5 class="fw-bold mb-1">{{ $belumTapping ?? 0 }}</h5>
                     <small class="text-muted">Belum Tapping Hari Ini</small>
                 </div>
             </div>
         </div>
+
     </div>
 
     {{-- ======= Grafik Presensi Mingguan ======= --}}
@@ -89,10 +79,12 @@
             <span class="badge bg-primary-subtle text-primary">Terbaru</span>
         </div>
 
-        <div class="card-body px-4 pb-4">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle text-center">
-                    <thead class="table-light">
+        <div class="card-body px-2 pb-4">
+
+            {{-- Wrapper scroll khusus tabel --}}
+            <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+                <table class="table table-hover align-middle text-center mb-0">
+                    <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
                         <tr>
                             <th>No</th>
                             <th>NIS</th>
@@ -136,6 +128,7 @@
                     </tbody>
                 </table>
             </div>
+
         </div>
     </div>
 </div>
@@ -145,13 +138,20 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     const ctx = document.getElementById('chartPresensi');
-    const chart = new Chart(ctx, {
+
+    const labels = {!! json_encode($labels ?? []) !!};
+    const series = {!! json_encode($series ?? []) !!};
+
+    console.log("Labels:", labels);
+    console.log("Series:", series);
+
+    new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: {!! json_encode($labels ?? []) !!},
+            labels: labels,
             datasets: [{
                 label: 'Jumlah Kehadiran',
-                data: {!! json_encode($series ?? []) !!},
+                data: series,
                 backgroundColor: 'rgba(13, 110, 253, 0.6)',
                 borderColor: 'rgba(13, 110, 253, 1)',
                 borderWidth: 1,

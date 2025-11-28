@@ -1,5 +1,5 @@
 {{-- resources/views/layouts/navbar.blade.php --}}
-<nav class="navbar">
+<nav class="navbar top-navbar">
   <div class="navbar-left">
     <img src="/LogoSmp1.png" alt="Logo" class="navbar-logo">
     <div class="navbar-brand">

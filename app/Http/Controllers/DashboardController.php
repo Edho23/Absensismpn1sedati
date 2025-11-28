@@ -24,14 +24,23 @@ class DashboardController extends Controller
             'user'  => 1, // admin tunggal (versi ini)
         ];
 
-        // Label Senin–Jumat minggu berjalan (tetap seperti semula)
-        $start = $today->copy()->startOfWeek(Carbon::MONDAY);
+        // ==========================
+        // Label Senin–Sabtu minggu berjalan
+        // ==========================
+        $start  = $today->copy()->startOfWeek(Carbon::MONDAY);
         $labels = [];
         $series = [];
-        foreach (range(0,4) as $i) {
-            $d = $start->copy()->addDays($i)->toDateString();
-            $labels[] = $start->copy()->addDays($i)->translatedFormat('l'); // Senin, Selasa, ...
-            $series[] = Absensi::whereDate('tanggal', $d)->count();
+
+        // 0 = Senin, 5 = Sabtu
+        foreach (range(0, 5) as $i) {
+            $currentDate = $start->copy()->addDays($i);     // Senin + i hari
+            $tanggal     = $currentDate->toDateString();    // YYYY-MM-DD
+
+            // Nama hari (di locale Indo akan jadi: Senin, Selasa, ...)
+            $labels[] = $currentDate->translatedFormat('l');
+
+            // Hitung jumlah absensi pada tanggal ini
+            $series[] = Absensi::whereDate('tanggal', $tanggal)->count();
         }
 
         // Log hari ini (terbaru)
@@ -42,19 +51,21 @@ class DashboardController extends Controller
             ->get();
 
         // ==========================
-        // Tambahan: Jumlah Siswa Belum Tapping Hari Ini
+        // Jumlah Siswa Belum Tapping Hari Ini
         // ==========================
-        $todayDate = $today->toDateString();
+        $todayDate     = $today->toDateString();
         $sudahAbsenNis = Absensi::whereDate('tanggal', $todayDate)->pluck('nis');
-        $belumTapping = Siswa::whereNotIn('nis', $sudahAbsenNis)->count();
+        $belumTapping  = Siswa::whereNotIn('nis', $sudahAbsenNis)->count();
 
         // ==========================
-        // Tambahan: Periode Mingguan untuk judul chart
+        // Periode Mingguan untuk judul chart
         // (Senin s/d Minggu minggu berjalan)
         // ==========================
-        $startOfWeek = $today->copy()->startOfWeek(Carbon::MONDAY);
-        $endOfWeek   = $today->copy()->endOfWeek(Carbon::SUNDAY);
-        $periodeMingguan = $startOfWeek->translatedFormat('d M Y') . ' - ' . $endOfWeek->translatedFormat('d M Y');
+        $startOfWeek     = $today->copy()->startOfWeek(Carbon::MONDAY);
+        $endOfWeek       = $today->copy()->endOfWeek(Carbon::SUNDAY);
+        $periodeMingguan = $startOfWeek->translatedFormat('d M Y')
+                            . ' - ' .
+                            $endOfWeek->translatedFormat('d M Y');
 
         // Kirim ke view
         return view('dashboard.index', compact(

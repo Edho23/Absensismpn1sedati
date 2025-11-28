@@ -169,6 +169,31 @@ class SiswaController extends Controller
     }
 
     /**
+     * HAPUS BANYAK SISWA SEKALIGUS (BULK DELETE)
+     */
+    public function bulkDestroy(Request $request)
+    {
+        // Ambil array id siswa dari checkbox
+        $ids = $request->input('ids', []);
+
+        if (empty($ids) || !is_array($ids)) {
+            return redirect()
+                ->route('siswa.index')
+                ->with('error', 'Tidak ada siswa yang dipilih untuk dihapus.');
+        }
+
+        // Pastikan semua id berupa integer
+        $ids = array_map('intval', $ids);
+
+        // Hapus semua siswa yang id-nya ada di array
+        $deleted = Siswa::whereIn('id', $ids)->delete();
+
+        return redirect()
+            ->route('siswa.index')
+            ->with('ok', "🗑️ {$deleted} data siswa berhasil dihapus.");
+    }
+    
+    /**
      * SEARCH Typeahead NIS/Nama (default hanya status A)
      * GET /siswa/search?term=...&status=A
      * Optional: kelas_id, kelas_paralel, gender, angkatan

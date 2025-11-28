@@ -28,6 +28,9 @@
             color: #333;
             margin: 0;
             overflow-x: hidden;
+
+            /* ✅ Geser seluruh konten ke bawah setinggi navbar */
+            padding-top: 70px; /* sesuaikan jika nanti navbar lebih tinggi/rendah */
         }
 
         .layout {
@@ -58,8 +61,8 @@
             transition: all 0.3s ease-in-out;
         }
 
-        /* Navbar */
-        .navbar {
+        /* Navbar utama di atas */
+        .top-navbar {
             background: linear-gradient(135deg, #0d6efd, #56ADF7);
             color: #fff;
             padding: 12px 25px;
@@ -67,15 +70,23 @@
             align-items: center;
             justify-content: space-between;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+
+            /* ✅ Selalu nempel di atas */
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            right: 0;
+
+            z-index: 1050;
         }
 
-        .navbar .nav-brand {
+        .top-navbar .nav-brand {
             font-weight: 600;
             font-size: 1.1rem;
             letter-spacing: 0.3px;
         }
 
-        .navbar .nav-actions i {
+        .top-navbar .nav-actions i {
             font-size: 1.3rem;
             margin-left: 18px;
             cursor: pointer;
@@ -83,7 +94,7 @@
             transition: 0.2s;
         }
 
-        .navbar .nav-actions i:hover {
+        .top-navbar .nav-actions i:hover {
             opacity: 1;
             transform: scale(1.1);
         }

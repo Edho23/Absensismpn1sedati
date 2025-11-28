@@ -70,6 +70,9 @@ Route::middleware([
     Route::post('/kartu/{id}/toggle', [\App\Http\Controllers\KartuController::class, 'toggle'])->name('kartu.toggle');
 
     Route::resource('perangkat', PerangkatController::class)->only(['index','store','update','destroy']);
+    
+    Route::delete('/siswa/bulk-destroy', [SiswaController::class, 'bulkDestroy'])
+        ->name('siswa.bulk-destroy');
 
     // ===== ENDPOINT TYPEAHEAD NIS/NAMA =====
     Route::get('/siswa/search', [SiswaController::class, 'search'])->name('siswa.search');
