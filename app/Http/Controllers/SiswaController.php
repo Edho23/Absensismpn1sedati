@@ -14,18 +14,18 @@ class SiswaController extends Controller
     /**
      * LIST + FILTER SISWA
      * Query params:
-     * - q            : cari nama/nis
-     * - kelas_id     : id kelas
-     * - kelas_paralel: dari tabel kelas (relasi)
-     * - gender       : L/P
-     * - angkatan     : tahun
-     * - status       : A/N
+     * - q             : cari nama/nis
+     * - nama_kelas    : VII/VIII/IX (alias grade)
+     * - kelas_paralel : angka/label paralel
+     * - gender        : L/P
+     * - angkatan      : tahun
+     * - status        : A/N
      */
     public function index(Request $r)
     {
         $filters = [
             'q'             => trim((string)$r->query('q')),
-            'kelas_id'      => $r->query('kelas_id'),
+            'nama_kelas'    => $r->query('nama_kelas') ?? $r->query('grade'),
             'kelas_paralel' => $r->query('kelas_paralel'),
             'gender'        => $r->query('gender'),
             'angkatan'      => $r->query('angkatan'),
@@ -41,19 +41,24 @@ class SiswaController extends Controller
                 $q->whereRaw('(nis ILIKE ? OR nama ILIKE ?)', [$kw, $kw]);
             } else {
                 $q->where(function($qq) use ($kw){
-                    $qq->where('nis', 'like', $kw)->orWhere('nama', 'like', $kw);
+                    $qq->where('nis', 'like', $kw)
+                       ->orWhere('nama', 'like', $kw);
                 });
             }
         }
 
-        // Filter kelas langsung
-        if ($filters['kelas_id']) {
-            $q->where('kelas_id', $filters['kelas_id']);
+        // Filter nama_kelas (VII/VIII/IX) via relasi kelas
+        if ($filters['nama_kelas']) {
+            $q->whereHas('kelas', fn($qq) =>
+                $qq->where('nama_kelas', $filters['nama_kelas'])
+            );
         }
 
         // Filter kelas_paralel via relasi kelas
         if ($filters['kelas_paralel']) {
-            $q->whereHas('kelas', fn($qq) => $qq->where('kelas_paralel', $filters['kelas_paralel']));
+            $q->whereHas('kelas', fn($qq) =>
+                $qq->where('kelas_paralel', $filters['kelas_paralel'])
+            );
         }
 
         // Filter gender
@@ -76,24 +81,47 @@ class SiswaController extends Controller
 
         $siswa = $q->paginate(10)->appends($filters);
 
-        // Dropdown helper
-        $kelas = Kelas::orderBy('kelas_paralel')->orderBy('nama_kelas', 'asc')->get();
-        $daftarParalel = Kelas::select('kelas_paralel')->distinct()->orderBy('kelas_paralel')->pluck('kelas_paralel');
+        // Semua record kelas (tetap dipakai form tambah & edit)
+        $kelas = Kelas::orderBy('kelas_paralel')
+            ->orderBy('nama_kelas', 'asc')
+            ->get();
+
+        // Grades unik (VII/VIII/IX) — diambil dari kolom nama_kelas
+        $grades = Kelas::select('nama_kelas')
+            ->distinct()
+            ->orderBy('nama_kelas', 'asc')
+            ->pluck('nama_kelas');
+
+        // Daftar paralel unik (untuk form tambah/edit)
+        $daftarParalel = Kelas::select('kelas_paralel')
+            ->distinct()
+            ->orderBy('kelas_paralel', 'asc')
+            ->pluck('kelas_paralel');
+
+        // Map: nama_kelas => [paralel...]
+        // Contoh: 'VII' => ['A','B','C']
+        $paralelMap = Kelas::select('nama_kelas','kelas_paralel')
+            ->orderBy('nama_kelas', 'asc')
+            ->orderBy('kelas_paralel', 'asc')
+            ->get()
+            ->groupBy('nama_kelas')
+            ->map(function($rows){
+                return $rows->pluck('kelas_paralel')->unique()->values();
+            })->toArray();
 
         return view('siswa.index', [
-            'siswa'         => $siswa,
-            'kelas'         => $kelas,
-            'filters'       => $filters,
-            'daftarParalel' => $daftarParalel,
+            'siswa'        => $siswa,
+            'kelas'        => $kelas,          // form tambah & edit
+            'filters'      => $filters,
+            'grades'       => $grades,         // VII/VIII/IX
+            'daftarParalel'=> $daftarParalel,  // paralel unik (A/B/C atau 1/2/3)
+            'paralelMap'   => $paralelMap,     // untuk filter dinamis grade -> paralel
         ]);
     }
 
-    /**
-     * TAMBAH DATA SISWA BARU
-     */
+    /** TAMBAH DATA SISWA BARU */
     public function store(Request $request)
     {
-        // Normalisasi NIS
         $request->merge([
             'nis' => strtoupper(trim((string)$request->input('nis'))),
         ]);
@@ -110,28 +138,25 @@ class SiswaController extends Controller
             'kelas_id.required' => 'Kelas wajib dipilih.',
         ]);
 
-        // Default status A
         $data['status'] = $data['status'] ?? 'A';
-
         Siswa::create($data);
 
-        return redirect()->route('siswa.index')->with('ok', '✅ Siswa baru berhasil ditambahkan.');
+        return redirect()->route('siswa.index')
+            ->with('ok', '✅ Siswa baru berhasil ditambahkan.');
     }
 
-    /**
-     * (Opsional) FORM EDIT SISWA bila pakai view terpisah
-     */
+    /** (Opsional) FORM EDIT SISWA */
     public function edit($id)
     {
         $siswa = Siswa::findOrFail($id);
-        $kelas = Kelas::orderBy('kelas_paralel')->orderBy('nama_kelas')->get();
+        $kelas = Kelas::orderBy('kelas_paralel')
+            ->orderBy('nama_kelas')
+            ->get();
 
         return view('siswa.edit', compact('siswa', 'kelas'));
     }
 
-    /**
-     * UPDATE DATA SISWA
-     */
+    /** UPDATE DATA SISWA */
     public function update(Request $request, $id)
     {
         $request->merge([
@@ -149,63 +174,49 @@ class SiswaController extends Controller
 
         $siswa = Siswa::findOrFail($id);
 
-        // Pertahankan status lama bila tidak dikirim
         if (!array_key_exists('status', $data) || $data['status'] === null || $data['status'] === '') {
             $data['status'] = $siswa->status ?? 'A';
         }
 
         $siswa->update($data);
 
-        return redirect()->route('siswa.index')->with('ok', '✏️ Data siswa berhasil diperbarui.');
+        return redirect()->route('siswa.index')
+            ->with('ok', '✏️ Data siswa berhasil diperbarui.');
     }
 
-    /**
-     * HAPUS SISWA
-     */
+    /** HAPUS SISWA */
     public function destroy($id)
     {
         Siswa::findOrFail($id)->delete();
-        return redirect()->route('siswa.index')->with('ok', '🗑️ Data siswa berhasil dihapus.');
+        return redirect()->route('siswa.index')
+            ->with('ok', '🗑️ Data siswa berhasil dihapus.');
     }
 
-    /**
-     * HAPUS BANYAK SISWA SEKALIGUS (BULK DELETE)
-     */
+    /** BULK DELETE */
     public function bulkDestroy(Request $request)
     {
-        // Ambil array id siswa dari checkbox
         $ids = $request->input('ids', []);
-
         if (empty($ids) || !is_array($ids)) {
-            return redirect()
-                ->route('siswa.index')
+            return redirect()->route('siswa.index')
                 ->with('error', 'Tidak ada siswa yang dipilih untuk dihapus.');
         }
 
-        // Pastikan semua id berupa integer
         $ids = array_map('intval', $ids);
-
-        // Hapus semua siswa yang id-nya ada di array
         $deleted = Siswa::whereIn('id', $ids)->delete();
 
-        return redirect()
-            ->route('siswa.index')
+        return redirect()->route('siswa.index')
             ->with('ok', "🗑️ {$deleted} data siswa berhasil dihapus.");
     }
     
-    /**
-     * SEARCH Typeahead NIS/Nama (default hanya status A)
-     * GET /siswa/search?term=...&status=A
-     * Optional: kelas_id, kelas_paralel, gender, angkatan
-     */
+    /** SEARCH Typeahead NIS/Nama (default hanya status A) */
     public function search(Request $r)
     {
         $term          = trim((string)$r->query('term', ''));
-        $kelasId       = $r->query('kelas_id');
         $kelasParalel  = $r->query('kelas_paralel');
+        $namaKelas     = $r->query('nama_kelas') ?? $r->query('grade');
         $gender        = $r->query('gender');
         $angkatan      = $r->query('angkatan');
-        $status        = $r->query('status', 'A'); // default aktif
+        $status        = $r->query('status', 'A');
 
         if ($term === '') return response()->json([]);
 
@@ -217,21 +228,35 @@ class SiswaController extends Controller
         if (in_array($status, ['A','N'], true)) {
             $q->where('status', $status);
         }
-
-        if ($kelasId)      $q->where('kelas_id', $kelasId);
-        if ($kelasParalel) $q->whereHas('kelas', fn($qq) => $qq->where('kelas_paralel', $kelasParalel));
-        if (in_array($gender, ['L','P'], true)) $q->where('gender', $gender);
-        if ($angkatan)     $q->where('angkatan', (int)$angkatan);
+        if ($namaKelas) {
+            $q->whereHas('kelas', fn($qq) =>
+                $qq->where('nama_kelas', $namaKelas)
+            );
+        }
+        if ($kelasParalel) {
+            $q->whereHas('kelas', fn($qq) =>
+                $qq->where('kelas_paralel', $kelasParalel)
+            );
+        }
+        if (in_array($gender, ['L','P'], true)) {
+            $q->where('gender', $gender);
+        }
+        if ($angkatan) {
+            $q->where('angkatan', (int)$angkatan);
+        }
 
         if ($driver === 'pgsql') {
             $q->whereRaw('(nis ILIKE ? OR nama ILIKE ?)', [$kw, $kw]);
         } else {
             $q->where(function ($qq) use ($kw) {
-                $qq->where('nis', 'like', $kw)->orWhere('nama', 'like', $kw);
+                $qq->where('nis', 'like', $kw)
+                   ->orWhere('nama', 'like', $kw);
             });
         }
 
-        $rows = $q->orderBy('nama', 'asc')->limit(10)->get(['id','nis','nama','kelas_id']);
+        $rows = $q->orderBy('nama', 'asc')
+            ->limit(10)
+            ->get(['id','nis','nama','kelas_id']);
 
         return response()->json($rows->map(fn($s) => [
             'nis'   => $s->nis,
@@ -241,9 +266,7 @@ class SiswaController extends Controller
         ]));
     }
 
-    /**
-     * PROMOSI NAIK KELAS / LULUS
-     */
+    /** PROMOSI NAIK KELAS / LULUS */
     public function promote(SiswaPromotion $svc)
     {
         $res = $svc->promoteAll();

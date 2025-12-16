@@ -2,7 +2,7 @@
 @section('title','Data Siswa')
 
 @section('content')
-<div class="container-fluid px-4 py-3">
+<div class="container-fluid px-4 py-3 siswa-page">
 
   {{-- ========== HEADER ========== --}}
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -68,6 +68,7 @@
 
         <div class="col-lg-2">
           <label class="form-label fw-semibold small text-secondary">Kelas</label>
+          {{-- tetap pilih kelas_id aktual untuk penyimpanan --}}
           <select name="kelas_id" class="form-select form-select-sm" id="add-kelas" required>
             <option value="">— Pilih Kelas —</option>
             @foreach($kelas as $k)
@@ -113,89 +114,86 @@
             <i class="bi bi-funnel me-2"></i>Filter & Pencarian
           </h6>
           <small class="text-muted">
-            Cari siswa berdasarkan NIS/nama, kelas, gender, angkatan, dan status.
+            Cari siswa berdasarkan NIS/nama, <strong>kelas (VII/VIII/IX)</strong>, paralel, gender, angkatan, dan status.
           </small>
         </div>
       </div>
 
       <form method="GET" action="{{ route('siswa.index') }}" class="row g-3 align-items-end" id="filter-form" autocomplete="off">
-        {{-- Pencarian + typeahead --}}
-        <div class="col-lg-4 position-relative">
-          <label class="form-label fw-semibold small text-secondary">Cari NIS/Nama</label>
-          <input type="text"
-                 class="form-control form-control-sm"
-                 name="q"
-                 id="q"
-                 value="{{ $filters['q'] ?? '' }}"
-                 placeholder="Ketik NIS atau Nama...">
-          <div id="q-suggest" class="typeahead-list" style="display:none;"></div>
-        </div>
+      {{-- Pencarian + typeahead --}}
+      <div class="col-lg-4 position-relative">
+        <label class="form-label fw-semibold small text-secondary">Cari NIS/Nama</label>
+        <input type="text"
+              class="form-control form-control-sm"
+              name="q"
+              id="q"
+              value="{{ $filters['q'] ?? '' }}"
+              placeholder="Ketik NIS atau Nama...">
+        <div id="q-suggest" class="typeahead-list" style="display:none;"></div>
+      </div>
 
-        {{-- Kelas --}}
-        <div class="col-lg-2">
-          <label class="form-label fw-semibold small text-secondary">Kelas</label>
-          <select name="kelas_id" class="form-select form-select-sm" id="filter-kelas">
-            <option value="">— Semua —</option>
-            @foreach($kelas as $k)
-              <option value="{{ $k->id }}" data-paralel="{{ $k->kelas_paralel }}"
-                {{ (string)($filters['kelas_id'] ?? '') === (string)$k->id ? 'selected' : '' }}>
-                {{ $k->kelas_paralel }} - {{ $k->nama_kelas }}
-              </option>
-            @endforeach
-          </select>
-        </div>
+      {{-- Kelas (VII/VIII/IX) --}}
+      <div class="col-lg-2">
+        <label class="form-label fw-semibold small text-secondary">Kelas</label>
+        <select name="nama_kelas" class="form-select form-select-sm" id="filter-grade">
+          <option value="">— Semua —</option>
+          @foreach($grades as $g)
+            <option value="{{ $g }}" {{ ($filters['nama_kelas'] ?? '') == $g ? 'selected' : '' }}>
+              {{ $g }}
+            </option>
+          @endforeach
+        </select>
+      </div>
 
-        {{-- Kelas Paralel --}}
-        <div class="col-lg-2">
-          <label class="form-label fw-semibold small text-secondary">Kelas Paralel</label>
-          <select name="kelas_paralel" class="form-select form-select-sm" id="filter-paralel">
-            <option value="">— Semua —</option>
-            @foreach($daftarParalel as $p)
-              <option value="{{ $p }}" {{ ($filters['kelas_paralel'] ?? '') == $p ? 'selected' : '' }}>{{ $p }}</option>
-            @endforeach
-          </select>
-        </div>
+      {{-- Kelas Paralel: terisi dinamis setelah pilih Kelas --}}
+      <div class="col-lg-2">
+        <label class="form-label fw-semibold small text-secondary">Kelas Paralel</label>
+        <select name="kelas_paralel" class="form-select form-select-sm" id="filter-paralel">
+          <option value="">— Semua —</option>
+          {{-- opsi akan diisi via JS --}}
+        </select>
+      </div>
 
-        {{-- Gender --}}
-        <div class="col-lg-2">
-          <label class="form-label fw-semibold small text-secondary">Gender</label>
-          <select name="gender" class="form-select form-select-sm">
-            <option value="">— Semua —</option>
-            <option value="L" {{ ($filters['gender'] ?? '')==='L' ? 'selected' : '' }}>L</option>
-            <option value="P" {{ ($filters['gender'] ?? '')==='P' ? 'selected' : '' }}>P</option>
-          </select>
-        </div>
+      {{-- Gender --}}
+      <div class="col-lg-2">
+        <label class="form-label fw-semibold small text-secondary">Gender</label>
+        <select name="gender" class="form-select form-select-sm">
+          <option value="">— Semua —</option>
+          <option value="L" {{ ($filters['gender'] ?? '')==='L' ? 'selected' : '' }}>L</option>
+          <option value="P" {{ ($filters['gender'] ?? '')==='P' ? 'selected' : '' }}>P</option>
+        </select>
+      </div>
 
-        {{-- Angkatan --}}
-        <div class="col-lg-2">
-          <label class="form-label fw-semibold small text-secondary">Angkatan</label>
-          <input type="number"
-                 name="angkatan"
-                 class="form-control form-control-sm"
-                 min="2000" max="2100"
-                 value="{{ $filters['angkatan'] ?? '' }}"
-                 placeholder="Tahun">
-        </div>
+      {{-- Angkatan --}}
+      <div class="col-lg-2">
+        <label class="form-label fw-semibold small text-secondary">Angkatan</label>
+        <input type="number"
+              name="angkatan"
+              class="form-control form-control-sm"
+              min="2000" max="2100"
+              value="{{ $filters['angkatan'] ?? '' }}"
+              placeholder="Tahun">
+      </div>
 
-        {{-- Status --}}
-        <div class="col-lg-2">
-          <label class="form-label fw-semibold small text-secondary">Status</label>
-          <select name="status" class="form-select form-select-sm">
-            <option value="">— Semua —</option>
-            <option value="A" {{ ($filters['status'] ?? '')==='A' ? 'selected' : '' }}>A (Aktif)</option>
-            <option value="N" {{ ($filters['status'] ?? '')==='N' ? 'selected' : '' }}>N (Nonaktif)</option>
-          </select>
-        </div>
+      {{-- Status --}}
+      <div class="col-lg-2">
+        <label class="form-label fw-semibold small text-secondary">Status</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">— Semua —</option>
+          <option value="A" {{ ($filters['status'] ?? '')==='A' ? 'selected' : '' }}>A (Aktif)</option>
+          <option value="N" {{ ($filters['status'] ?? '')==='N' ? 'selected' : '' }}>N (Nonaktif)</option>
+        </select>
+      </div>
 
-        <div class="col-12 d-flex gap-2">
-          <button type="submit" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
-            <i class="bi bi-search"></i><span>Filter</span>
-          </button>
-          <a href="{{ route('siswa.index') }}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-clockwise me-1"></i>Reset
-          </a>
-        </div>
-      </form>
+      <div class="col-12 d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
+          <i class="bi bi-search"></i><span>Filter</span>
+        </button>
+        <a href="{{ route('siswa.index') }}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-clockwise me-1"></i>Reset
+        </a>
+      </div>
+    </form>
     </div>
   </div>
 
@@ -235,9 +233,7 @@
         <table class="table table-hover align-middle text-center mb-0">
           <thead class="table-light small">
             <tr>
-              <th>
-                <input type="checkbox" id="check-all">
-              </th>
+              <th><input type="checkbox" id="check-all"></th>
               <th>No</th>
               <th>NIS</th>
               <th>Nama</th>
@@ -251,9 +247,7 @@
           <tbody class="small">
           @forelse($siswa as $i => $s)
             <tr>
-              <td>
-                <input type="checkbox" class="check-item" name="ids[]" value="{{ $s->id }}">
-              </td>
+              <td><input type="checkbox" class="check-item" name="ids[]" value="{{ $s->id }}"></td>
               <td>{{ $siswa->firstItem() + $i }}</td>
               <td>{{ $s->nis }}</td>
               <td class="text-start">{{ $s->nama }}</td>
@@ -266,11 +260,7 @@
                 </span>
               </td>
               <td class="d-flex gap-2 justify-content-center">
-                {{-- Hanya tombol Edit (collapse) --}}
-                <button class="btn btn-sm btn-outline-primary"
-                        type="button"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#edit-{{ $s->id }}">
+                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#edit-{{ $s->id }}">
                   <i class="bi bi-pencil-square"></i>
                 </button>
               </td>
@@ -292,8 +282,7 @@
                   </div>
                   <div class="col-md-2">
                     <label class="form-label small text-secondary">Angkatan</label>
-                    <input type="number" name="angkatan" class="form-control form-control-sm"
-                           min="2000" max="2100" value="{{ $s->angkatan }}">
+                    <input type="number" name="angkatan" class="form-control form-control-sm" min="2000" max="2100" value="{{ $s->angkatan }}">
                   </div>
 
                   <div class="col-md-2">
@@ -312,7 +301,7 @@
                       @foreach($kelas as $k)
                         <option value="{{ $k->id }}" data-paralel="{{ $k->kelas_paralel }}"
                           {{ (string)$s->kelas_id === (string)$k->id ? 'selected' : '' }}>
-                          {{ $k->kelas_paralel }} - {{ $k->nama_kelas }}
+                          {{ $k->nama_kelas }} - {{ $k->kelas_paralel }}
                         </option>
                       @endforeach
                     </select>
@@ -336,7 +325,6 @@
                   </div>
 
                   <div class="col-md-1 d-grid">
-                    {{-- Simpan → konfirmasi dulu --}}
                     <button type="button" class="btn btn-sm btn-success btn-confirm-edit">
                       <i class="bi bi-save"></i>
                     </button>
@@ -433,7 +421,7 @@
   </div>
 </div>
 
-{{-- ===== TOAST CONTAINER (selalu aktif) ===== --}}
+{{-- ===== TOAST CONTAINER ===== --}}
 <div class="toast-container position-fixed top-0 end-0 p-3" id="toastArea" style="z-index: 1080;"></div>
 
 @push('styles')
@@ -443,75 +431,70 @@
     background:#fff; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden;
     box-shadow:0 8px 24px rgba(0,0,0,.06);
   }
-  .typeahead-item{ padding:8px 12px; cursor:pointer; font-size:13px; display:flex; justify-content:space-between; gap:12px; }
+  .typeahead-item{ padding:10px 14px; cursor:pointer; font-size:14px; display:flex; justify-content:space-between; gap:12px; }
   .typeahead-item:hover{ background:#f3f4f6 }
   .typeahead-nis{ font-weight:700 }
   .typeahead-nama{ color:#374151 }
-  .typeahead-kelas{ color:#6b7280; font-size:12px }
+  .typeahead-kelas{ color:#6b7280; font-size:12.5px }
 
-  .table { font-size: 13px; }
-  .table th, .table td {
+  /* ==== OVERRIDE KHUSUS HALAMAN SISWA ==== */
+  .siswa-page { font-size: 15px; }
+  .siswa-page .card .card-body,
+  .siswa-page .card .card-header { font-size: 15px; }
+
+  .siswa-page .form-control-sm,
+  .siswa-page .form-select-sm {
+    font-size: 0.95rem;
+    padding-top: .5rem; padding-bottom: .5rem;
+    border-radius: 10px;
+  }
+
+  .siswa-page .btn-sm { font-size: 0.95rem; }
+
+  .siswa-page .table { font-size: 14.5px; }
+  .siswa-page .table th, .siswa-page .table td {
     vertical-align: middle !important;
-    padding-top: 8px !important;
-    padding-bottom: 8px !important;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
   }
-  .form-control-sm, .form-select-sm {
-    font-size: 13px;
-    border-radius: 8px;
-  }
+
+  .siswa-page .badge { font-size: 0.8rem; }
+  .siswa-page .pagination .page-link { font-size: 0.95rem; border-radius: 8px; }
 </style>
 @endpush
 
 @push('scripts')
 <script>
-/** ========= Toast helper (Bootstrap 5) ========= */
+/** ========= Toast helper ========= */
 const toastArea = document.getElementById('toastArea');
 function makeToast(title, message, type){
-  const bg = {
-    success:'bg-success text-white',
-    danger:'bg-danger text-white',
-    warning:'bg-warning',
-    info:'bg-info'
-  }[type] || 'bg-dark text-white';
-
+  const bg = {success:'bg-success text-white',danger:'bg-danger text-white',warning:'bg-warning',info:'bg-info'}[type] || 'bg-dark text-white';
   const el = document.createElement('div');
   el.className = 'toast align-items-center';
-  el.setAttribute('role','alert');
-  el.setAttribute('aria-live','assertive');
-  el.setAttribute('aria-atomic','true');
+  el.setAttribute('role','alert'); el.setAttribute('aria-live','assertive'); el.setAttribute('aria-atomic','true');
   el.innerHTML = `
     <div class="toast-header ${bg}">
       <strong class="me-auto">${title}</strong>
       <small>baru saja</small>
-      <button type="button" class="btn-close ${bg.includes('text-white')?'btn-close-white':''}" data-bs-dismiss="toast" aria-label="Close"></button>
+      <button type="button" class="btn-close ${bg.includes('text-white')?'btn-close-white':''}" data-bs-dismiss="toast"></button>
     </div>
-    <div class="toast-body">${message}</div>
-  `;
-  toastArea.appendChild(el);
-  new bootstrap.Toast(el, { delay: 3500, autohide: true }).show();
+    <div class="toast-body">${message}</div>`;
+  toastArea.appendChild(el); new bootstrap.Toast(el, { delay: 3500, autohide: true }).show();
 }
 
 /** ========= Render session & error sebagai toast ========= */
-@if(session('ok'))
-  makeToast('Berhasil', @json(session('ok')), 'success');
-@endif
-@if(session('error'))
-  makeToast('Perhatian', @json(session('error')), 'warning');
-@endif
+@if(session('ok'))  makeToast('Berhasil', @json(session('ok')), 'success'); @endif
+@if(session('error'))  makeToast('Perhatian', @json(session('error')), 'warning'); @endif
 @if($errors->any())
-  @foreach($errors->all() as $msg)
-    makeToast('Error', @json($msg), 'danger');
-  @endforeach
+  @foreach($errors->all() as $msg) makeToast('Error', @json($msg), 'danger'); @endforeach
 @endif
 
 /** ========= Typeahead ========= */
 const qInput = document.getElementById('q');
 const listEl = document.getElementById('q-suggest');
 let qTimer = null;
-
 function hideSuggest(){ listEl.style.display = 'none'; listEl.innerHTML = ''; }
 function showSuggest(){ if(listEl.innerHTML.trim()!==''){ listEl.style.display = 'block'; } }
-
 qInput?.addEventListener('input', () => {
   clearTimeout(qTimer);
   const term = qInput.value.trim();
@@ -519,9 +502,7 @@ qInput?.addEventListener('input', () => {
   qTimer = setTimeout(async () => {
     try{
       const params = new URLSearchParams({ term, status: 'A' });
-      const res = await fetch(`{{ route('siswa.search') }}?`+params.toString(), {
-        headers: { 'Accept': 'application/json' }
-      });
+      const res = await fetch(`{{ route('siswa.search') }}?`+params.toString(), { headers: { 'Accept': 'application/json' }});
       const data = await res.json();
       if(!Array.isArray(data) || data.length===0){ hideSuggest(); return; }
       listEl.innerHTML = data.map(it => `
@@ -529,13 +510,11 @@ qInput?.addEventListener('input', () => {
           <span class="typeahead-nis">${it.nis}</span>
           <span class="typeahead-nama">${it.nama}</span>
           <span class="typeahead-kelas">${it.kelas ?? '-'}</span>
-        </div>
-      `).join('');
+        </div>`).join('');
       showSuggest();
     }catch(e){ hideSuggest(); }
   }, 250);
 });
-
 listEl?.addEventListener('click', (ev) => {
   const row = ev.target.closest('.typeahead-item');
   if(!row) return;
@@ -543,7 +522,6 @@ listEl?.addEventListener('click', (ev) => {
   hideSuggest();
   document.getElementById('filter-form').submit();
 });
-
 document.addEventListener('click', (ev) => {
   if(!listEl.contains(ev.target) && ev.target !== qInput){ hideSuggest(); }
 });
@@ -562,20 +540,7 @@ function filterAddKelas(){
 }
 addParalel?.addEventListener('change', filterAddKelas);
 
-/** ====== Filter KELAS (filter bar) by paralel ====== */
-const filterParalel = document.getElementById('filter-paralel');
-const filterKelas   = document.getElementById('filter-kelas');
-function filterFilterKelas(){
-  if(!filterParalel || !filterKelas) return;
-  const p = filterParalel.value;
-  [...filterKelas.options].forEach(opt => {
-    if (!opt.value) return;
-    opt.hidden = !!p && (opt.dataset.paralel !== p);
-  });
-}
-filterParalel?.addEventListener('change', filterFilterKelas);
-
-/** ====== Filter dinamis (row edit) ====== */
+/** ====== Filter dinamis (row edit) by paralel ====== */
 document.querySelectorAll('.paralel-edit').forEach(sel => {
   sel.addEventListener('change', () => {
     const target = document.querySelector(sel.dataset.target);
@@ -588,11 +553,52 @@ document.querySelectorAll('.paralel-edit').forEach(sel => {
   });
 });
 
-/** ====== Konfirmasi EDIT (submit inline) ====== */
+/** ====== Filter KELAS (FILTER SECTION) grade -> paralel dinamis ====== */
+const filterGrade    = document.getElementById('filter-grade');
+const filterParalel  = document.getElementById('filter-paralel');
+const paralelMap     = @json($paralelMap);
+const initialGrade   = @json($filters['nama_kelas'] ?? '');
+const initialParalel = @json($filters['kelas_paralel'] ?? '');
+
+function rebuildFilterParalel(preselected){
+  if (!filterParalel) return;
+  const g = filterGrade?.value || '';
+  // reset options
+  filterParalel.innerHTML = '';
+  const baseOpt = document.createElement('option');
+  baseOpt.value = '';
+  baseOpt.textContent = '— Semua —';
+  filterParalel.appendChild(baseOpt);
+
+  if (!g || !paralelMap[g]) return;
+
+  paralelMap[g].forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p;
+    opt.textContent = p;
+    if (preselected && preselected === p) {
+      opt.selected = true;
+    }
+    filterParalel.appendChild(opt);
+  });
+}
+
+// init awal: set grade & paralel sesuai filter existing
+if (filterGrade) {
+  if (initialGrade) {
+    filterGrade.value = initialGrade;
+  }
+  rebuildFilterParalel(initialParalel);
+
+  filterGrade.addEventListener('change', () => {
+    rebuildFilterParalel('');
+  });
+}
+
+/** ====== Konfirmasi EDIT ====== */
 const modalEdit = new bootstrap.Modal(document.getElementById('modalConfirmEdit'));
 const spanEditNama = document.getElementById('editNama');
 let formToEdit = null;
-
 document.querySelectorAll('.form-edit .btn-confirm-edit').forEach(btn => {
   btn.addEventListener('click', function () {
     formToEdit = this.closest('form.form-edit');
@@ -600,39 +606,28 @@ document.querySelectorAll('.form-edit .btn-confirm-edit').forEach(btn => {
     modalEdit.show();
   });
 });
-document.getElementById('btnEditGo').addEventListener('click', function () {
-  if (formToEdit) formToEdit.submit();
-});
+document.getElementById('btnEditGo').addEventListener('click', function () { if (formToEdit) formToEdit.submit(); });
 
-/** ====== BULK DELETE (checkbox + modal) ====== */
-const bulkForm       = document.getElementById('bulkDeleteForm');
-const btnBulkDelete  = document.getElementById('btnBulkDelete');
-const checkAll       = document.getElementById('check-all');
-const checkItems     = document.querySelectorAll('.check-item');
-const modalDelete    = new bootstrap.Modal(document.getElementById('modalConfirmDelete'));
+/** ====== BULK DELETE ====== */
+const bulkForm        = document.getElementById('bulkDeleteForm');
+const btnBulkDelete   = document.getElementById('btnBulkDelete');
+const checkAll        = document.getElementById('check-all');
+const checkItems      = document.querySelectorAll('.check-item');
+const modalDelete     = new bootstrap.Modal(document.getElementById('modalConfirmDelete'));
 const spanDeleteCount = document.getElementById('deleteCount');
 
 function updateCheckAllState(){
   const total = checkItems.length;
   const checked = document.querySelectorAll('.check-item:checked').length;
-  if (!total) {
-    checkAll.checked = false;
-    checkAll.indeterminate = false;
-    return;
-  }
+  if (!total) { checkAll.checked = false; checkAll.indeterminate = false; return; }
   checkAll.checked = (checked === total);
   checkAll.indeterminate = (checked > 0 && checked < total);
 }
-
 checkAll?.addEventListener('change', function(){
   checkItems.forEach(cb => { cb.checked = checkAll.checked; });
   updateCheckAllState();
 });
-
-checkItems.forEach(cb => {
-  cb.addEventListener('change', updateCheckAllState);
-});
-
+checkItems.forEach(cb => { cb.addEventListener('change', updateCheckAllState); });
 btnBulkDelete?.addEventListener('click', function(){
   const checked = document.querySelectorAll('.check-item:checked');
   if (!checked.length) {
@@ -642,13 +637,11 @@ btnBulkDelete?.addEventListener('click', function(){
   spanDeleteCount.textContent = checked.length;
   modalDelete.show();
 });
-
 document.getElementById('btnDeleteGo').addEventListener('click', function(){
   if (bulkForm) bulkForm.submit();
 });
 
 /** Init awal **/
-filterFilterKelas();
 filterAddKelas();
 updateCheckAllState();
 </script>

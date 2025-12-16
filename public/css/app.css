@@ -1,6 +1,14 @@
 :root {
-  --bg:#f6f8fc; --card:#fff; --muted:#6b7280; --border:#e5e7eb;
-  --brand:#0f172a; --primary:#eef2ff;
+  --bg: #f6f8fc;
+  --card: #fff;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --brand: #0f172a;
+  --primary: #eef2ff;
+
+  /* Konsistensi layout */
+  --navbar-h: 70px;     /* tinggi navbar (samakan dengan tampilanmu) */
+  --sidebar-w: 250px;   /* lebar sidebar */
 }
 
 /* ===== Reset & Base ===== */
@@ -8,32 +16,61 @@
 html, body { height: 100% }
 body {
   margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Helvetica Neue", sans-serif;
+  font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Helvetica Neue", sans-serif;
   background: var(--bg);
   color: #111827;
+  /* ruang konten di bawah navbar fixed */
+  padding-top: var(--navbar-h);
 }
 
-/* ===== NAVBAR ===== */
-.navbar {
-  height: 64px;
-  background: var(--card);
-  border-bottom: 1px solid var(--border);
+/* ===== NAVBAR (fixed top) ===== */
+.app-navbar {
+  height: var(--navbar-h);
+  background: linear-gradient(135deg, #0d6efd, #56ADF7);
+  color: #fff;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 16px; position: sticky; top: 0; z-index: 20;
+  padding: 0 16px;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1050;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
+
 .navbar-left { display: flex; align-items: center; gap: 12px }
 .navbar-logo { width: 40px; height: 40px; border-radius: 8px; object-fit: cover }
-.navbar-brand .brand-title { font-weight: 800; line-height: 1 }
-.navbar-brand .brand-sub { font-size: 12px; color: var(--muted); margin-top: 2px }
+.navbar-brand .brand-title { font-weight: 700; line-height: 1 }
+.navbar-brand .brand-sub { font-size: 12px; opacity: .9; margin-top: 2px }
 
-/* ===== LAYOUT ===== */
-.container { display: flex; gap: 24px; padding: 20px }
-.sidebar {
-  width: 260px; background: var(--card); border: 1px solid var(--border);
-  border-radius: 12px; padding: 12px;
-  height: calc(100vh - 108px); position: sticky; top: 84px; overflow: auto;
+/* ===== LAYOUT WRAPPER ===== */
+.layout { min-height: 100vh; }
+.layout-container {
+  display: flex;
+  gap: 24px;
+  padding: 16px 20px 20px 20px;
+  /* kasih ruang untuk sidebar fixed di kiri */
+  margin-left: var(--sidebar-w);
 }
-.main { flex: 1 }
+
+/* ===== SIDEBAR (benar2 fixed) ===== */
+.sidebar {
+  position: fixed;
+  top: var(--navbar-h);
+  left: 0;
+  width: var(--sidebar-w);
+  height: calc(100vh - var(--navbar-h));
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  border-radius: 0 12px 12px 0;
+  padding: 12px;
+  overflow: auto;
+  z-index: 1000; /* di bawah navbar */
+  /* matikan transisi supaya tidak “gerak-gerak” */
+  transition: none !important;
+}
+
+/* ===== MAIN CONTENT ===== */
+.main {
+  flex: 1;
+  min-width: 0;
+}
 
 /* ===== MENU ===== */
 .menu { list-style: none; margin: 0; padding: 4px }
@@ -41,28 +78,34 @@ body {
   display: flex; align-items: center; gap: 10px;
   width: 100%; padding: 10px 12px; border-radius: 10px;
   color: #111827; text-decoration: none; border: 0; background: transparent; cursor: pointer;
+  transition: background-color .2s ease, color .2s ease;
 }
 .menu-link:hover { background: var(--primary) }
-.menu-link.active { background: var(--primary); font-weight: 600 }
+.menu-link.active {
+  background: linear-gradient(135deg, #0d6efd, #004ecb);
+  color: #fff !important;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0,85,255,0.2);
+}
 .menu-ico { width: 22px; display: inline-flex; align-items: center; justify-content: center }
 .menu-caret { margin-left: auto; opacity: .7 }
 
-/* ===== DROPDOWN ===== */
 .menu-dropdown .submenu { display: none; padding-left: 10px; margin: 4px 0 }
 .menu-dropdown.open .submenu,
-.collapse.show.submenu { display: block } /* dukung bootstrap collapse */
+.collapse.show.submenu { display: block }
 .submenu-link {
-  display: block; padding: 8px 12px; border-radius: 8px;
-  color: #111827; text-decoration: none;
+  display: block; padding: 8px 12px 8px 44px; border-radius: 8px;
+  color: #111827; text-decoration: none; font-size: 13.5px;
+  transition: background-color .2s ease, color .2s ease;
 }
-.submenu-link:hover { background: #f3f4f6 }
-.submenu-link.active { background: #eef2ff; font-weight: 600 }
+.submenu-link:hover { background: #f8f9fa; color: #0d6efd }
+.submenu-link.active { color: #0d6efd; font-weight: 600 }
 
 /* ===== PAGE HEADINGS ===== */
-.page-title { font-size: 26px; font-weight: 800; margin: 6px 0 0 }
+.page-title { font-size: 26px; font-weight: 800; margin: 6px 0 0; color: #0d6efd }
 .page-sub { color: var(--muted); margin: 4px 0 16px }
 
-/* ===== CARDS & PANELS (sesuai dashboard) ===== */
+/* ===== CARDS & PANELS ===== */
 .cards {
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px; margin-bottom: 16px;
@@ -73,6 +116,7 @@ body {
 }
 .card-title { color: var(--muted); font-size: 14px }
 .card-value { font-size: 28px; font-weight: 800; margin-top: 6px }
+
 .panel {
   background: var(--card); border: 1px solid var(--border);
   border-radius: 12px; margin-top: 16px;
@@ -97,9 +141,39 @@ body {
 .table.align-middle th, .table.align-middle td { vertical-align: middle }
 .badge.rounded-pill { border-radius: 999px }
 
+/* ===== SCROLLBAR (lebih halus) ===== */
+::-webkit-scrollbar { width: 8px; height: 8px }
+::-webkit-scrollbar-thumb { background-color: rgba(17,24,39,.15); border-radius: 10px }
+::-webkit-scrollbar-track { background: transparent }
+
 /* ===== RESPONSIVE ===== */
+/* Desktop besar */
+@media (max-width: 1280px) {
+  .cards { grid-template-columns: repeat(3, minmax(0, 1fr)) }
+}
+
+/* Tablet & bawah: sidebar dibuat non-fixed agar tidak menutup konten */
 @media (max-width: 1024px) {
-  .container { flex-direction: column }
-  .sidebar { position: static; height: auto }
+  .layout-container {
+    margin-left: 0;            /* hilangkan offset kiri */
+    padding: 16px 16px 20px;
+    gap: 16px;
+    flex-direction: column;
+  }
+
+  .sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    border-right: 1px solid var(--border);
+    overflow: visible;
+  }
+
   .cards { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .cards { grid-template-columns: 1fr }
 }
