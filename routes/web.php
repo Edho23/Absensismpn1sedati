@@ -29,6 +29,9 @@ Route::middleware('web')->group(function () {
 
     // Root -> dashboard
     Route::get('/', fn () => redirect()->route('dashboard'));
+
+    Route::get('/dashboard/ping', [DashboardController::class, 'ping'])->name('dashboard.ping');
+
 });
 
 /*
@@ -46,19 +49,28 @@ Route::middleware([
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // ===== ABSENSI =====
-    Route::get('/absensi',         [AbsensiController::class, 'index'])->name('absensi.index');
+    Route::get('/absensi',       [AbsensiController::class, 'index'])->name('absensi.index');
     Route::get('/absensi/input',   [AbsensiController::class, 'index'])->name('absensi.input');
-    Route::get('/absensi/edit',    [AbsensiController::class, 'edit'])->name('absensi.edit');
-    Route::get('/absensi/log',     [AbsensiController::class, 'log'])->name('absensi.log');
-    Route::post('/absensi/manual', [AbsensiController::class, 'storeManual'])->name('absensi.manual');
-    Route::put('/absensi/{id}',    [AbsensiController::class, 'update'])->name('absensi.update');
-    Route::post('/absensi/{id}/update', [AbsensiController::class, 'update']);
-    Route::delete('/absensi/{id}', [AbsensiController::class, 'destroy'])->name('absensi.destroy');
+    Route::get('/absensi/edit',  [AbsensiController::class, 'edit'])->name('absensi.edit');
+    Route::get('/absensi/log',   [AbsensiController::class, 'log'])->name('absensi.log');
+    Route::get('/absensi/log/ping', [AbsensiController::class, 'logPing'])->name('absensi.log.ping');
 
-    // NEW: bulk & inline updates
-    Route::post('/absensi/bulk-update', [AbsensiController::class, 'bulkUpdate'])->name('absensi.bulk');
-    Route::post('/absensi/inline-update', [AbsensiController::class, 'inlineUpdate'])->name('absensi.inline');
+    Route::post('/absensi/manual', [AbsensiController::class, 'storeManual'])
+        ->name('absensi.manual');
 
+
+    Route::post('/absensi/bulk-update', [AbsensiController::class, 'bulkUpdate'])
+        ->name('absensi.bulk');
+
+    Route::post('/absensi/inline-update', [AbsensiController::class, 'inlineUpdate'])
+        ->name('absensi.inline');
+
+  
+    Route::put('/absensi/{id}', [AbsensiController::class, 'update'])
+        ->name('absensi.update');
+
+    Route::delete('/absensi/{id}', [AbsensiController::class, 'destroy'])
+        ->name('absensi.destroy');
 
     // ===== DATA MASTER =====
     Route::resource('siswa', SiswaController::class)->only(['index','create','store','edit','update','destroy']);

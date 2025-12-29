@@ -74,7 +74,7 @@ class AbsensiController extends Controller
     }
 
     /**
-     * Halaman Edit: sekarang ada filter Tanggal, Status, Kelas, Paralel, Gender, NIS/Nama (q)
+     * Halaman Edit: ada filter Tanggal, Status, Kelas, Paralel, Gender, NIS/Nama (q)
      */
     public function edit(Request $req)
     {
@@ -108,8 +108,19 @@ class AbsensiController extends Controller
 
         $absensi = $q->paginate(25)->withQueryString();
 
-        // Dropdown filter
-        $daftarKelas   = Kelas::select('nama_kelas')->distinct()->orderBy('nama_kelas')->pluck('nama_kelas');
+        $daftarKelas = Kelas::select('nama_kelas')
+        ->distinct()
+        ->get()
+        ->sortBy(function ($row) {
+            // Urutan khusus: VII, VIII, IX, lainnya setelah itu
+            $order = [
+                'VII'  => 1,
+                'VIII' => 2,
+                'IX'   => 3,
+            ];
+            return $order[$row->nama_kelas] ?? 4;
+        })
+        ->pluck('nama_kelas');
         $daftarParalel = Kelas::select('kelas_paralel')->distinct()->orderBy('kelas_paralel')->pluck('kelas_paralel');
 
         return view('absensi.edit', [
@@ -125,47 +136,136 @@ class AbsensiController extends Controller
         ]);
     }
 
+    /**
+     * LOG ABSENSI + FILTER
+     * - tanggal (default: hari ini jika kosong)
+     * - kelas  : dikirim sebagai "nama_kelas|kelas_paralel" (contoh "VIII|2")
+     * - status : HADIR/SAKIT/IZIN/ALPA
+     */
     public function log(Request $req)
     {
         $tanggal = $req->query('tanggal');
-        $kelas   = $req->query('kelas');
-        $status  = $req->query('status');
+        if (!$tanggal) {
+            $tanggal = Carbon::now('Asia/Jakarta')->toDateString();
+        }
+
+        // "VII|1", "VIII|2", dst
+        $kelasParam = $req->query('kelas');
+        $status     = $req->query('status');
 
         $q = Absensi::with('siswa.kelas')
-            ->orderByDesc('tanggal')
-            ->orderByDesc('jam_masuk');
+            ->whereDate('tanggal', $tanggal);
 
-        if ($tanggal) $q->whereDate('tanggal', $tanggal);
-        if ($status)  $q->where('status_harian', $status);
-        if ($kelas) {
-            $q->whereHas('siswa.kelas', fn($qq) => $qq->where('nama_kelas', $kelas));
+        // Filter status harian
+        if (in_array($status, ['HADIR','SAKIT','IZIN','ALPA'], true)) {
+            $q->where('status_harian', $status);
         }
 
-        $absensi = $q->paginate(20)->withQueryString();
+        // Filter kelas (nama_kelas + kelas_paralel)
+        if ($kelasParam) {
+            [$namaKelas, $paralel] = array_pad(explode('|', $kelasParam, 2), 2, null);
 
-        $kelasQuery = Kelas::query();
-        if (Schema::hasColumn('kelas', 'grade')) {
-            $kelasQuery->orderBy('grade');
-        } elseif (Schema::hasColumn('kelas', 'tingkat')) {
-            $kelasQuery->orderBy('tingkat');
+            if ($namaKelas) {
+                $q->whereHas('siswa.kelas', function ($qq) use ($namaKelas, $paralel) {
+                    $qq->where('nama_kelas', $namaKelas);
+                    if ($paralel !== null && $paralel !== '') {
+                        $qq->where('kelas_paralel', $paralel);
+                    }
+                });
+            }
         }
-        if (Schema::hasColumn('kelas', 'kelas_paralel')) {
-            $kelasQuery->orderBy('kelas_paralel');
-        }
-        $kelasQuery->orderBy('nama_kelas');
 
-        $daftarKelas = $kelasQuery->pluck('nama_kelas');
+        $absensi = $q->orderByDesc('tanggal')
+            ->orderByDesc('jam_masuk')
+            ->orderByDesc('id')
+            ->paginate(20)
+            ->withQueryString();
+
+        // ===== Dropdown Kelas: gabungan nama_kelas + kelas_paralel =====
+        $kelasRows = Kelas::select('nama_kelas', 'kelas_paralel')
+            ->when(
+                Schema::hasColumn('kelas', 'grade'),
+                fn($qq) => $qq->orderBy('grade')
+            )
+            ->when(
+                !Schema::hasColumn('kelas', 'grade') && Schema::hasColumn('kelas', 'tingkat'),
+                fn($qq) => $qq->orderBy('tingkat')
+            )
+            ->orderBy('nama_kelas')
+            ->orderBy('kelas_paralel')
+            ->get()
+            ->unique(function ($row) {
+                return $row->nama_kelas . '|' . $row->kelas_paralel;
+            })
+            ->values();
+
+        // Bentuk: [ ['value' => 'VII|1', 'label' => 'VII - 1'], ... ]
+        $daftarKelas = $kelasRows->map(function ($row) {
+            return [
+                'value' => $row->nama_kelas . '|' . $row->kelas_paralel,
+                'label' => $row->nama_kelas . ' - ' . $row->kelas_paralel,
+            ];
+        });
 
         return view('absensi.log', [
             'absensi'     => $absensi,
             'tanggal'     => $tanggal,
-            'kelas'       => $kelas,
+            'kelas'       => $kelasParam,
             'status'      => $status,
             'daftarKelas' => $daftarKelas,
         ]);
     }
 
-    public function update(Request $req, int $id)
+    /**
+     * ✅ PING untuk auto refresh halaman LOG (polling)
+     * GET /absensi/log/ping?tanggal=...&kelas=...&status=...
+     * kelas di sini juga format "nama_kelas|kelas_paralel"
+     */
+    public function logPing(Request $req)
+    {
+        $tanggal = $req->query('tanggal');
+        if (!$tanggal) {
+            $tanggal = Carbon::now('Asia/Jakarta')->toDateString();
+        }
+
+        $kelasParam = $req->query('kelas');
+        $status     = $req->query('status');
+
+        $q = Absensi::query()
+            ->whereDate('tanggal', $tanggal);
+
+        if (in_array($status, ['HADIR','SAKIT','IZIN','ALPA'], true)) {
+            $q->where('status_harian', $status);
+        }
+
+        if ($kelasParam) {
+            [$namaKelas, $paralel] = array_pad(explode('|', $kelasParam, 2), 2, null);
+
+            if ($namaKelas) {
+                $q->whereHas('siswa.kelas', function ($qq) use ($namaKelas, $paralel) {
+                    $qq->where('nama_kelas', $namaKelas);
+                    if ($paralel !== null && $paralel !== '') {
+                        $qq->where('kelas_paralel', $paralel);
+                    }
+                });
+            }
+        }
+
+        // pakai updated_at supaya detect perubahan status/catatan/jam
+        $latest = $q->orderBy('updated_at', 'desc')
+            ->orderBy('id', 'desc')
+            ->first(['id', 'updated_at']);
+
+        return response()->json([
+            'latest_id'         => $latest?->id,
+            'latest_updated_at' => $latest?->updated_at?->toIso8601String(),
+        ])->withHeaders([
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma'        => 'no-cache',
+        ]);
+    }
+
+    public function update(Request $req, $id)
     {
         $data = $req->validate([
             'jam_masuk'      => 'nullable|date_format:H:i',
@@ -175,6 +275,7 @@ class AbsensiController extends Controller
         ]);
 
         $absen = Absensi::findOrFail($id);
+
         $baseDate = Carbon::parse($absen->tanggal, 'Asia/Jakarta')->startOfDay();
 
         if (array_key_exists('jam_masuk', $data)) {
@@ -189,11 +290,17 @@ class AbsensiController extends Controller
                 : null;
         }
 
-        if (array_key_exists('status_harian', $data)) $absen->status_harian = $data['status_harian'];
-        if (array_key_exists('catatan', $data))       $absen->catatan       = $data['catatan'];
+        if (array_key_exists('status_harian', $data)) {
+            $absen->status_harian = $data['status_harian'];
+        }
+
+        if (array_key_exists('catatan', $data)) {
+            $absen->catatan = $data['catatan'];
+        }
 
         $absen->save();
-        return back()->with('ok','Absensi diupdate.');
+
+        return back()->with('ok', 'Absensi berhasil diperbarui.');
     }
 
     public function destroy(int $id)
@@ -202,10 +309,6 @@ class AbsensiController extends Controller
         return back()->with('ok', 'Absensi dihapus.');
     }
 
-    /**
-     * Bulk update: set status untuk banyak id sekaligus.
-     * POST /absensi/bulk-update
-     */
     public function bulkUpdate(Request $req)
     {
         $data = $req->validate([
@@ -222,10 +325,6 @@ class AbsensiController extends Controller
         return back()->with('ok', 'Status '.$data['status'].' diterapkan ke '.count($data['ids']).' baris.');
     }
 
-    /**
-     * Inline update sederhana (AJAX friendly): id + status
-     * POST /absensi/inline-update
-     */
     public function inlineUpdate(Request $req)
     {
         $data = $req->validate([

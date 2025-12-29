@@ -61,15 +61,15 @@ class AbsenBulanSheet implements WithEvents, WithTitle
 
                 // ====== HEADER (TEMPLATE TETAP) ======
                 $sheet->mergeCells('F3:Q3');
-                $sheet->setCellValue('F3', 'Daftar Hadir Siswa ............................');
+                $sheet->setCellValue('F3', 'Daftar Hadir Siswa Smp Negeri 1 Sedati');
                 $sheet->mergeCells('F4:Q4');
                 $sheet->setCellValue('F4', 'Semester Genap Tahun Pembelajaran .....................');
                 $sheet->getStyle('F3:Q4')->getFont()->setBold(true);
 
                 $sheet->setCellValue('B6', 'Kelas');         $sheet->setCellValue('D6', ':'); $sheet->setCellValue('E6', $namaKelas);
-                $sheet->setCellValue('G6', 'Jumlah Siswa');  $sheet->setCellValue('I6', ':'); $sheet->setCellValue('J6', $jml.' orang');
-                $sheet->setCellValue('L6', 'Laki-Laki');     $sheet->setCellValue('N6', ':'); $sheet->setCellValue('O6', $laki.' orang');
-                $sheet->setCellValue('Q6', 'Perempuan');     $sheet->setCellValue('S6', ':'); $sheet->setCellValue('T6', $perem.' orang');
+                $sheet->setCellValue('G6', 'Jumlah Siswa');  $sheet->setCellValue('I6', ':'); $sheet->setCellValue('J6', $jml);
+                $sheet->setCellValue('L6', 'Laki-Laki');     $sheet->setCellValue('N6', ':'); $sheet->setCellValue('O6', $laki);
+                $sheet->setCellValue('Q6', 'Perempuan');     $sheet->setCellValue('S6', ':'); $sheet->setCellValue('T6', $perem);
                 $sheet->setCellValue('V6', 'Wali Kelas');    $sheet->setCellValue('X6', ':'); $sheet->setCellValue('Y6', $this->waliKelas ?: '....................');
 
                 // ====== HEADER TABEL ======

@@ -99,7 +99,19 @@ class LaporanController extends Controller
         }
 
         // Daftar pilihan filter
-        $daftarKelas = Kelas::select('nama_kelas')->distinct()->orderBy('nama_kelas')->pluck('nama_kelas');
+        $daftarKelas = Kelas::select('nama_kelas')
+        ->distinct()
+        ->get()
+        ->sortBy(function ($row) {
+            // Urutan khusus: VII, VIII, IX, lainnya setelah itu
+            $order = [
+                'VII'  => 1,
+                'VIII' => 2,
+                'IX'   => 3,
+            ];
+            return $order[$row->nama_kelas] ?? 4;
+        })
+        ->pluck('nama_kelas');
         $daftarParalel = Kelas::select('kelas_paralel')->distinct()->orderBy('kelas_paralel')->pluck('kelas_paralel');
 
         if ($mode === 'rekap') {
@@ -116,6 +128,12 @@ class LaporanController extends Controller
                         JOIN siswa s2 ON s2.$kelasRelasiCol = k.id
                         WHERE s2.nis = absensi.nis
                     )) AS nama_kelas"),
+                     DB::raw("MAX((
+                        SELECT kelas_paralel
+                        FROM kelas k
+                        JOIN siswa s2 ON s2.$kelasRelasiCol = k.id
+                        WHERE s2.nis = absensi.nis
+                    )) AS kelas_paralel"),
                     DB::raw("SUM(CASE WHEN status_harian='HADIR' THEN 1 ELSE 0 END) AS hadir"),
                     DB::raw("SUM(CASE WHEN status_harian='SAKIT' THEN 1 ELSE 0 END) AS sakit"),
                     DB::raw("SUM(CASE WHEN status_harian='IZIN'  THEN 1 ELSE 0 END) AS izin"),
@@ -124,6 +142,7 @@ class LaporanController extends Controller
                 ])
                 ->groupBy('absensi.nis')
                 ->orderBy('nama_kelas')
+                ->orderBy('kelas_paralel')
                 ->orderBy('nama')
                 ->paginate(20);
 

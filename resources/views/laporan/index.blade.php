@@ -143,6 +143,7 @@
                             <th>NIS</th>
                             <th>Nama</th>
                             <th>Kelas</th>
+                            <th>Paralel</th>
                             <th>H</th>
                             <th>S</th>
                             <th>I</th>
@@ -156,7 +157,8 @@
                                 <td>{{ $rekap->firstItem() + $i }}</td>
                                 <td>{{ $r->nis }}</td>
                                 <td class="text-start">{{ $r->nama }}</td>
-                                <td>{{ $r->kelas_label }}</td>
+                                <td>{{ $r->nama_kelas }}</td>
+                                <td>{{ $r->kelas_paralel }}</td>
                                 <td><span class="badge bg-success">{{ $r->hadir }}</span></td>
                                 <td><span class="badge bg-warning text-dark">{{ $r->sakit }}</span></td>
                                 <td><span class="badge bg-info text-dark">{{ $r->izin }}</span></td>

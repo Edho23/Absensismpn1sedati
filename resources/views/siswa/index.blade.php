@@ -55,11 +55,11 @@
                  min="2000" max="2100" placeholder="Tahun">
         </div>
 
-        {{-- Baris 2: Paralel (filter kelas), Kelas, Gender, Status --}}
+        {{-- Baris 2: Paralel, Kelas, Gender, Status --}}
         <div class="col-lg-2">
           <label class="form-label fw-semibold small text-secondary">Kelas Paralel</label>
-          <select class="form-select form-select-sm" id="add-paralel">
-            <option value="">— Semua —</option>
+          <select class="form-select form-select-sm" id="add-paralel" name="kelas_paralel" required>
+            <option value="">— Pilih Paralel —</option>
             @foreach($daftarParalel as $p)
               <option value="{{ $p }}">{{ $p }}</option>
             @endforeach
@@ -68,13 +68,11 @@
 
         <div class="col-lg-2">
           <label class="form-label fw-semibold small text-secondary">Kelas</label>
-          {{-- tetap pilih kelas_id aktual untuk penyimpanan --}}
-          <select name="kelas_id" class="form-select form-select-sm" id="add-kelas" required>
+          {{-- hanya VII / VIII / IX --}}
+          <select name="nama_kelas" class="form-select form-select-sm" id="add-kelas" required>
             <option value="">— Pilih Kelas —</option>
-            @foreach($kelas as $k)
-              <option value="{{ $k->id }}" data-paralel="{{ $k->kelas_paralel }}">
-                {{ $k->nama_kelas }} - {{ $k->kelas_paralel }}
-              </option>
+            @foreach($grades as $g)
+              <option value="{{ $g }}">{{ $g }}</option>
             @endforeach
           </select>
         </div>
@@ -120,80 +118,80 @@
       </div>
 
       <form method="GET" action="{{ route('siswa.index') }}" class="row g-3 align-items-end" id="filter-form" autocomplete="off">
-      {{-- Pencarian + typeahead --}}
-      <div class="col-lg-4 position-relative">
-        <label class="form-label fw-semibold small text-secondary">Cari NIS/Nama</label>
-        <input type="text"
-              class="form-control form-control-sm"
-              name="q"
-              id="q"
-              value="{{ $filters['q'] ?? '' }}"
-              placeholder="Ketik NIS atau Nama...">
-        <div id="q-suggest" class="typeahead-list" style="display:none;"></div>
-      </div>
+        {{-- Pencarian + typeahead --}}
+        <div class="col-lg-4 position-relative">
+          <label class="form-label fw-semibold small text-secondary">Cari NIS/Nama</label>
+          <input type="text"
+                 class="form-control form-control-sm"
+                 name="q"
+                 id="q"
+                 value="{{ $filters['q'] ?? '' }}"
+                 placeholder="Ketik NIS atau Nama...">
+          <div id="q-suggest" class="typeahead-list" style="display:none;"></div>
+        </div>
 
-      {{-- Kelas (VII/VIII/IX) --}}
-      <div class="col-lg-2">
-        <label class="form-label fw-semibold small text-secondary">Kelas</label>
-        <select name="nama_kelas" class="form-select form-select-sm" id="filter-grade">
-          <option value="">— Semua —</option>
-          @foreach($grades as $g)
-            <option value="{{ $g }}" {{ ($filters['nama_kelas'] ?? '') == $g ? 'selected' : '' }}>
-              {{ $g }}
-            </option>
-          @endforeach
-        </select>
-      </div>
+        {{-- Kelas (VII/VIII/IX) --}}
+        <div class="col-lg-2">
+          <label class="form-label fw-semibold small text-secondary">Kelas</label>
+          <select name="nama_kelas" class="form-select form-select-sm" id="filter-grade">
+            <option value="">— Semua —</option>
+            @foreach($grades as $g)
+              <option value="{{ $g }}" {{ ($filters['nama_kelas'] ?? '') == $g ? 'selected' : '' }}>
+                {{ $g }}
+              </option>
+            @endforeach
+          </select>
+        </div>
 
-      {{-- Kelas Paralel: terisi dinamis setelah pilih Kelas --}}
-      <div class="col-lg-2">
-        <label class="form-label fw-semibold small text-secondary">Kelas Paralel</label>
-        <select name="kelas_paralel" class="form-select form-select-sm" id="filter-paralel">
-          <option value="">— Semua —</option>
-          {{-- opsi akan diisi via JS --}}
-        </select>
-      </div>
+        {{-- Kelas Paralel: terisi dinamis setelah pilih Kelas --}}
+        <div class="col-lg-2">
+          <label class="form-label fw-semibold small text-secondary">Kelas Paralel</label>
+          <select name="kelas_paralel" class="form-select form-select-sm" id="filter-paralel">
+            <option value="">— Semua —</option>
+            {{-- opsi akan diisi via JS --}}
+          </select>
+        </div>
 
-      {{-- Gender --}}
-      <div class="col-lg-2">
-        <label class="form-label fw-semibold small text-secondary">Gender</label>
-        <select name="gender" class="form-select form-select-sm">
-          <option value="">— Semua —</option>
-          <option value="L" {{ ($filters['gender'] ?? '')==='L' ? 'selected' : '' }}>L</option>
-          <option value="P" {{ ($filters['gender'] ?? '')==='P' ? 'selected' : '' }}>P</option>
-        </select>
-      </div>
+        {{-- Gender --}}
+        <div class="col-lg-2">
+          <label class="form-label fw-semibold small text-secondary">Gender</label>
+          <select name="gender" class="form-select form-select-sm">
+            <option value="">— Semua —</option>
+            <option value="L" {{ ($filters['gender'] ?? '')==='L' ? 'selected' : '' }}>L</option>
+            <option value="P" {{ ($filters['gender'] ?? '')==='P' ? 'selected' : '' }}>P</option>
+          </select>
+        </div>
 
-      {{-- Angkatan --}}
-      <div class="col-lg-2">
-        <label class="form-label fw-semibold small text-secondary">Angkatan</label>
-        <input type="number"
-              name="angkatan"
-              class="form-control form-control-sm"
-              min="2000" max="2100"
-              value="{{ $filters['angkatan'] ?? '' }}"
-              placeholder="Tahun">
-      </div>
+        {{-- Angkatan --}}
+        <div class="col-lg-2">
+          <label class="form-label fw-semibold small text-secondary">Angkatan</label>
+          <input type="number"
+                 name="angkatan"
+                 class="form-control form-control-sm"
+                 min="2000" max="2100"
+                 value="{{ $filters['angkatan'] ?? '' }}"
+                 placeholder="Tahun">
+        </div>
 
-      {{-- Status --}}
-      <div class="col-lg-2">
-        <label class="form-label fw-semibold small text-secondary">Status</label>
-        <select name="status" class="form-select form-select-sm">
-          <option value="">— Semua —</option>
-          <option value="A" {{ ($filters['status'] ?? '')==='A' ? 'selected' : '' }}>A (Aktif)</option>
-          <option value="N" {{ ($filters['status'] ?? '')==='N' ? 'selected' : '' }}>N (Nonaktif)</option>
-        </select>
-      </div>
+        {{-- Status --}}
+        <div class="col-lg-2">
+          <label class="form-label fw-semibold small text-secondary">Status</label>
+          <select name="status" class="form-select form-select-sm">
+            <option value="">— Semua —</option>
+            <option value="A" {{ ($filters['status'] ?? '')==='A' ? 'selected' : '' }}>A (Aktif)</option>
+            <option value="N" {{ ($filters['status'] ?? '')==='N' ? 'selected' : '' }}>N (Nonaktif)</option>
+          </select>
+        </div>
 
-      <div class="col-12 d-flex gap-2">
-        <button type="submit" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
-          <i class="bi bi-search"></i><span>Filter</span>
-        </button>
-        <a href="{{ route('siswa.index') }}" class="btn btn-outline-secondary btn-sm">
-          <i class="bi bi-arrow-clockwise me-1"></i>Reset
-        </a>
-      </div>
-    </form>
+        <div class="col-12 d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
+            <i class="bi bi-search"></i><span>Filter</span>
+          </button>
+          <a href="{{ route('siswa.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-clockwise me-1"></i>Reset
+          </a>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -526,20 +524,6 @@ document.addEventListener('click', (ev) => {
   if(!listEl.contains(ev.target) && ev.target !== qInput){ hideSuggest(); }
 });
 
-/** ====== Filter KELAS (form tambah) by paralel ====== */
-const addParalel = document.getElementById('add-paralel');
-const addKelas   = document.getElementById('add-kelas');
-function filterAddKelas(){
-  if(!addParalel || !addKelas) return;
-  const p = addParalel.value;
-  [...addKelas.options].forEach(opt => {
-    if (!opt.value) return;
-    opt.hidden = !!p && (opt.dataset.paralel !== p);
-  });
-  if (addKelas.selectedOptions.length && addKelas.selectedOptions[0].hidden) addKelas.value = '';
-}
-addParalel?.addEventListener('change', filterAddKelas);
-
 /** ====== Filter dinamis (row edit) by paralel ====== */
 document.querySelectorAll('.paralel-edit').forEach(sel => {
   sel.addEventListener('change', () => {
@@ -563,7 +547,6 @@ const initialParalel = @json($filters['kelas_paralel'] ?? '');
 function rebuildFilterParalel(preselected){
   if (!filterParalel) return;
   const g = filterGrade?.value || '';
-  // reset options
   filterParalel.innerHTML = '';
   const baseOpt = document.createElement('option');
   baseOpt.value = '';
@@ -583,7 +566,6 @@ function rebuildFilterParalel(preselected){
   });
 }
 
-// init awal: set grade & paralel sesuai filter existing
 if (filterGrade) {
   if (initialGrade) {
     filterGrade.value = initialGrade;
@@ -642,8 +624,8 @@ document.getElementById('btnDeleteGo').addEventListener('click', function(){
 });
 
 /** Init awal **/
-filterAddKelas();
 updateCheckAllState();
 </script>
 @endpush
+
 @endsection

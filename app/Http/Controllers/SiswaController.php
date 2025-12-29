@@ -13,13 +13,6 @@ class SiswaController extends Controller
 {
     /**
      * LIST + FILTER SISWA
-     * Query params:
-     * - q             : cari nama/nis
-     * - nama_kelas    : VII/VIII/IX (alias grade)
-     * - kelas_paralel : angka/label paralel
-     * - gender        : L/P
-     * - angkatan      : tahun
-     * - status        : A/N
      */
     public function index(Request $r)
     {
@@ -81,7 +74,7 @@ class SiswaController extends Controller
 
         $siswa = $q->paginate(10)->appends($filters);
 
-        // Semua record kelas (tetap dipakai form tambah & edit)
+        // Semua record kelas (untuk row edit)
         $kelas = Kelas::orderBy('kelas_paralel')
             ->orderBy('nama_kelas', 'asc')
             ->get();
@@ -99,7 +92,6 @@ class SiswaController extends Controller
             ->pluck('kelas_paralel');
 
         // Map: nama_kelas => [paralel...]
-        // Contoh: 'VII' => ['A','B','C']
         $paralelMap = Kelas::select('nama_kelas','kelas_paralel')
             ->orderBy('nama_kelas', 'asc')
             ->orderBy('kelas_paralel', 'asc')
@@ -111,10 +103,10 @@ class SiswaController extends Controller
 
         return view('siswa.index', [
             'siswa'        => $siswa,
-            'kelas'        => $kelas,          // form tambah & edit
+            'kelas'        => $kelas,          // untuk row edit
             'filters'      => $filters,
             'grades'       => $grades,         // VII/VIII/IX
-            'daftarParalel'=> $daftarParalel,  // paralel unik (A/B/C atau 1/2/3)
+            'daftarParalel'=> $daftarParalel,  // paralel unik (1/2/3 dst)
             'paralelMap'   => $paralelMap,     // untuk filter dinamis grade -> paralel
         ]);
     }
@@ -126,20 +118,43 @@ class SiswaController extends Controller
             'nis' => strtoupper(trim((string)$request->input('nis'))),
         ]);
 
+        // sekarang kita terima nama_kelas + kelas_paralel,
+        // lalu cari kelas_id yang sesuai di tabel kelas.
         $data = $request->validate([
-            'nis'       => 'required|string|max:50|unique:siswa,nis',
-            'nama'      => 'required|string|max:100',
-            'kelas_id'  => 'required|exists:kelas,id',
-            'status'    => ['nullable', Rule::in(['A','N'])],
-            'gender'    => ['nullable', Rule::in(['L','P'])],
-            'angkatan'  => ['nullable', 'integer', 'min:2000', 'max:2100'],
+            'nis'           => 'required|string|max:50|unique:siswa,nis',
+            'nama'          => 'required|string|max:100',
+            'nama_kelas'    => ['required', 'string', 'max:20'],
+            'kelas_paralel' => ['required', 'string', 'max:20'],
+            'status'        => ['nullable', Rule::in(['A','N'])],
+            'gender'        => ['nullable', Rule::in(['L','P'])],
+            'angkatan'      => ['nullable', 'integer', 'min:2000', 'max:2100'],
         ], [
-            'nis.unique'        => 'NIS sudah terdaftar!',
-            'kelas_id.required' => 'Kelas wajib dipilih.',
+            'nis.unique'           => 'NIS sudah terdaftar!',
+            'nama_kelas.required'  => 'Kelas (VII/VIII/IX) wajib dipilih.',
+            'kelas_paralel.required'=> 'Kelas paralel wajib dipilih.',
         ]);
 
-        $data['status'] = $data['status'] ?? 'A';
-        Siswa::create($data);
+        // cari kelas_id berdasarkan kombinasi nama_kelas + kelas_paralel
+        $kelas = Kelas::where('nama_kelas', $data['nama_kelas'])
+            ->where('kelas_paralel', $data['kelas_paralel'])
+            ->first();
+
+        if (!$kelas) {
+            return back()
+                ->withErrors(['kelas_id' => 'Kombinasi kelas dan paralel tidak ditemukan di master kelas.'])
+                ->withInput();
+        }
+
+        $payload = [
+            'nis'       => $data['nis'],
+            'nama'      => $data['nama'],
+            'kelas_id'  => $kelas->id,
+            'status'    => $data['status'] ?? 'A',
+            'gender'    => $data['gender'] ?? null,
+            'angkatan'  => $data['angkatan'] ?? null,
+        ];
+
+        Siswa::create($payload);
 
         return redirect()->route('siswa.index')
             ->with('ok', '✅ Siswa baru berhasil ditambahkan.');
@@ -163,6 +178,7 @@ class SiswaController extends Controller
             'nis' => strtoupper(trim((string)$request->input('nis'))),
         ]);
 
+        // UPDATE tetap pakai kelas_id seperti sebelumnya (row edit tidak diubah)
         $data = $request->validate([
             'nis'       => 'required|string|max:50|unique:siswa,nis,' . $id,
             'nama'      => 'required|string|max:100',

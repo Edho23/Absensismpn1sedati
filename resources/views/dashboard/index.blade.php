@@ -133,7 +133,12 @@
     </div>
 </div>
 
-{{-- ======= Chart.js Script ======= --}}
+@php
+    $lastLog = $logs->first(); // karena query sudah latest(updated_at)
+    $lastId = $lastLog?->id ?? 0;
+    $lastUpdated = $lastLog?->updated_at?->toIso8601String();
+@endphp
+
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -141,9 +146,6 @@
 
     const labels = {!! json_encode($labels ?? []) !!};
     const series = {!! json_encode($series ?? []) !!};
-
-    console.log("Labels:", labels);
-    console.log("Series:", series);
 
     new Chart(ctx, {
         type: 'bar',
@@ -163,11 +165,66 @@
             scales: {
                 y: { beginAtZero: true, ticks: { precision: 0 } }
             },
-            plugins: {
-                legend: { display: false }
-            }
+            plugins: { legend: { display: false } }
         }
     });
+
+    // ==============================
+    // ✅ AUTO REFRESH JIKA ADA DATA BARU
+    // ==============================
+    const DASH_PING_URL = @json(route('dashboard.ping'));
+
+    let lastId = {{ (int) $lastId }};
+    let lastUpdated = @json($lastUpdated); // bisa null
+
+    let timer = null;
+    const INTERVAL_MS = 5000; // 5 detik (bisa 3000–10000)
+
+    async function pingDashboard() {
+        try {
+            const res = await fetch(DASH_PING_URL, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                cache: 'no-store',
+                credentials: 'same-origin',
+            });
+
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+
+            const newId = data.latest_id ?? 0;
+            const newUpdated = data.latest_updated_at ?? null;
+
+            // Jika ada perubahan, reload
+            if (newId != lastId || newUpdated !== lastUpdated) {
+                window.location.reload();
+                return;
+            }
+        } catch (e) {
+            console.warn('[dashboard ping] gagal:', e);
+            // biarkan lanjut, jangan ganggu user
+        } finally {
+            timer = setTimeout(pingDashboard, INTERVAL_MS);
+        }
+    }
+
+    function startPolling() {
+        if (timer) return;
+        timer = setTimeout(pingDashboard, INTERVAL_MS);
+    }
+
+    function stopPolling() {
+        if (timer) clearTimeout(timer);
+        timer = null;
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) stopPolling();
+        else startPolling();
+    });
+
+    startPolling();
 </script>
 @endpush
 @endsection
+

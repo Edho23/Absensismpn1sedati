@@ -4,7 +4,7 @@ return [
     'timezone' => 'Asia/Jakarta',
 
     'cutoff' => [
-        'mon' => '06:55',
+        'mon' => '14:50',
         'tue' => '06:55',
         'wed' => '06:55',
         'thu' => '11:25',
@@ -14,7 +14,7 @@ return [
     ],
 
     'dismissal' => [
-        'mon' => '15:30',
+        'mon' => '14:58',
         'tue' => '15:30',
         'wed' => '15:30',
         'thu' => '11:30',

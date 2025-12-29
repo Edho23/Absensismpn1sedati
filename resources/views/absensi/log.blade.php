@@ -20,7 +20,9 @@
                     <select name="kelas" class="form-select">
                         <option value="">Semua Kelas</option>
                         @foreach($daftarKelas as $k)
-                            <option value="{{ $k }}" {{ $kelas == $k ? 'selected' : '' }}>{{ $k }}</option>
+                            <option value="{{ $k['value'] }}" {{ $kelas == $k['value'] ? 'selected' : '' }}>
+                                {{ $k['label'] }}
+                            </option>
                         @endforeach
                     </select>
                 </div>
@@ -56,7 +58,7 @@
                         <th>NIS</th>
                         <th>Nama Siswa</th>
                         <th>Kelas</th>
-                        <th>Kelas Paralel</th> {{-- ▼ kolom baru --}}
+                        <th>Kelas Paralel</th>
                         <th>Tanggal</th>
                         <th>Jam Masuk</th>
                         <th>Jam Pulang</th>
@@ -68,23 +70,14 @@
                 <tbody>
                     @forelse ($absensi as $i => $item)
                         <tr>
-                            {{-- numbering yang benar saat pagination --}}
                             <td>{{ $absensi->firstItem() + $i }}</td>
                             <td>{{ $item->siswa->nis ?? '-' }}</td>
                             <td class="text-start">{{ $item->siswa->nama ?? '-' }}</td>
                             <td>{{ $item->siswa->kelas->nama_kelas ?? '-' }}</td>
-                            <td>{{ $item->siswa->kelas->kelas_paralel ?? '-' }}</td> {{-- ▼ paralel --}}
+                            <td>{{ $item->siswa->kelas->kelas_paralel ?? '-' }}</td>
                             <td>{{ \Carbon\Carbon::parse($item->tanggal)->format('d/m/Y') }}</td>
-                            <td>
-                                {{ $item->jam_masuk
-                                    ? \Carbon\Carbon::parse($item->jam_masuk)->format('H:i')
-                                    : '-' }}
-                            </td>
-                            <td>
-                                {{ $item->jam_pulang
-                                    ? \Carbon\Carbon::parse($item->jam_pulang)->format('H:i')
-                                    : '-' }}
-                            </td>
+                            <td>{{ $item->jam_masuk ? \Carbon\Carbon::parse($item->jam_masuk)->format('H:i') : '-' }}</td>
+                            <td>{{ $item->jam_pulang ? \Carbon\Carbon::parse($item->jam_pulang)->format('H:i') : '-' }}</td>
                             <td>
                                 <span class="badge {{ ($item->sumber ?? '') === 'MANUAL' ? 'bg-primary' : 'bg-success' }}">
                                     {{ $item->sumber ?? '-' }}
@@ -113,11 +106,75 @@
                 </tbody>
             </table>
 
-            {{-- Pagination --}}
             <div class="mt-3 d-flex justify-content-center">
                 {{ $absensi->links('pagination::bootstrap-5') }}
             </div>
         </div>
     </div>
 </div>
+
+@php
+    $first = $absensi->first(); // list log urut terbaru dulu
+    $lastId = $first?->id ?? 0;
+    $lastUpdated = $first?->updated_at?->toIso8601String();
+@endphp
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // URL ping membawa query filter yang sedang aktif (tanggal/kelas/status/page)
+    const PING_URL = @json(route('absensi.log.ping', request()->query()));
+
+    let lastId = {{ (int) $lastId }};
+    let lastUpdated = @json($lastUpdated);
+
+    let timer = null;
+    const INTERVAL_MS = 4000; // rekomendasi 3-5 detik biar ringan
+
+    async function ping() {
+        try {
+            const res = await fetch(PING_URL, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                cache: 'no-store',
+                credentials: 'same-origin',
+            });
+
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+
+            const newId = data.latest_id ?? 0;
+            const newUpdated = data.latest_updated_at ?? null;
+
+            if (newId != lastId || newUpdated !== lastUpdated) {
+                window.location.reload();
+                return;
+            }
+        } catch (e) {
+            console.warn('[absensi log ping] gagal:', e);
+        } finally {
+            timer = setTimeout(ping, INTERVAL_MS);
+        }
+    }
+
+    function start() {
+        if (timer) return;
+        timer = setTimeout(ping, INTERVAL_MS);
+    }
+
+    function stop() {
+        if (timer) clearTimeout(timer);
+        timer = null;
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) stop();
+        else start();
+    });
+
+    start();
+});
+</script>
+@endpush
+
 @endsection
