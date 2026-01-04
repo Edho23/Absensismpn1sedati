@@ -51,7 +51,9 @@
         <div class="card-body px-4 pb-4 pt-3">
             <form action="{{ route('absensi.manual') }}" method="POST" autocomplete="off">
                 @csrf
-                <div class="row g-3 align-items-end">
+
+                {{-- PENTING: jangan pakai align-items-end biar kita kontrol sendiri --}}
+                <div class="row g-3">
 
                     {{-- NIS dengan Typeahead --}}
                     <div class="col-lg-5 col-md-6 position-relative">
@@ -64,9 +66,11 @@
                                value="{{ old('nis') }}"
                                required>
                         <div id="nis-suggest" class="typeahead-list" style="display:none;"></div>
-                        <small class="text-muted d-block mt-1">
+
+                        {{-- Helper (tinggi tetap) --}}
+                        <div class="form-helper">
                             Pilih siswa dari daftar saran agar NIS tepat.
-                        </small>
+                        </div>
                     </div>
 
                     {{-- Status --}}
@@ -78,6 +82,9 @@
                             <option value="IZIN"  {{ old('status_harian')==='IZIN'  ? 'selected':'' }}>Izin</option>
                             <option value="ALPA"  {{ old('status_harian')==='ALPA'  ? 'selected':'' }}>Alpa</option>
                         </select>
+
+                        {{-- Spacer supaya tinggi kolom sama dengan kolom NIS --}}
+                        <div class="form-helper form-helper--spacer">&nbsp;</div>
                     </div>
 
                     {{-- Catatan --}}
@@ -88,14 +95,21 @@
                                class="form-control form-control-sm rounded-3"
                                placeholder="Misal: lupa kartu, izin terlambat, dsb. (boleh kosong)"
                                value="{{ old('catatan') }}">
+
+                        {{-- Spacer supaya tinggi kolom sama --}}
+                        <div class="form-helper form-helper--spacer">&nbsp;</div>
                     </div>
 
                     {{-- Submit --}}
-                    <div class="col-lg-1 col-md-4 d-grid mt-2 mt-lg-0">
+                    <div class="col-lg-1 col-md-4 d-grid">
                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 py-2">
                             <i class="bi bi-save me-1"></i>Simpan
                         </button>
+
+                        {{-- Spacer supaya tinggi kolom sama --}}
+                        <div class="form-helper form-helper--spacer">&nbsp;</div>
                     </div>
+
                 </div>
             </form>
         </div>
@@ -109,6 +123,7 @@
                 Daftar Presensi Hari Ini ({{ \Carbon\Carbon::parse($tanggal)->format('d M Y') }})
             </h6>
         </div>
+
         <div class="card-body px-4 pb-3">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
@@ -152,9 +167,9 @@
                 </table>
             </div>
 
-            {{-- Pagination --}}
+            {{-- PAGINATION (Bootstrap + query filter kebawa) --}}
             <div class="mt-3 d-flex justify-content-center">
-                {{ $absensi->links() }}
+                {{ $absensi->appends(request()->query())->links('pagination::bootstrap-5') }}
             </div>
         </div>
     </div>
@@ -176,6 +191,18 @@
     .btn-primary { background-color: #0d6efd; border: none; }
     .btn-primary:hover { background-color: #0b5ed7; }
 
+    /* Helper / Spacer agar semua kolom sejajar */
+    .form-helper{
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 6px;
+        line-height: 1.2;
+        min-height: 16px; /* kunci */
+    }
+    .form-helper--spacer{
+        color: transparent; /* makan tinggi, tapi tidak terlihat */
+    }
+
     /* Typeahead dropdown */
     .typeahead-list{
         position:absolute; top:68px; left:0; right:0; z-index:30;
@@ -193,5 +220,144 @@
 @endpush
 
 @push('scripts')
-<script src="/js/absensi.js"></script>
+<script>
+  (function(){
+    const input = document.getElementById('field-nis');
+    const box   = document.getElementById('nis-suggest');
+    if(!input || !box) return;
+
+    const API_URL = @json(route('siswa.search'));
+
+    let items = [];
+    let activeIndex = -1;
+    let lastController = null;
+    let debounceTimer = null;
+
+    function escHtml(str){
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function hide(){
+      box.style.display = "none";
+      box.innerHTML = "";
+      items = [];
+      activeIndex = -1;
+    }
+
+    function show(){ box.style.display = "block"; }
+
+    function render(list){
+      items = list || [];
+      activeIndex = -1;
+
+      if(!items.length){
+        box.innerHTML = `<div class="typeahead-item" style="cursor:default;">
+          <span class="typeahead-nama">Tidak ditemukan</span>
+        </div>`;
+        show();
+        return;
+      }
+
+      box.innerHTML = items.map((it, idx) => `
+        <div class="typeahead-item" data-idx="${idx}">
+          <div>
+            <div>
+              <span class="typeahead-nis">${escHtml(it.nis)}</span>
+              <span class="typeahead-nama"> — ${escHtml(it.nama)}</span>
+            </div>
+            <div class="typeahead-kelas">${escHtml(it.kelas || "-")}</div>
+          </div>
+        </div>
+      `).join("");
+
+      show();
+    }
+
+    function setActive(idx){
+      activeIndex = idx;
+      const rows = box.querySelectorAll(".typeahead-item");
+      rows.forEach(r => r.style.background = "");
+      if(rows[activeIndex]) rows[activeIndex].style.background = "#f3f4f6";
+    }
+
+    function pick(it){
+      input.value = it.nis;
+      hide();
+    }
+
+    async function search(term){
+      // Sesuaikan dengan edit.blade.php kamu: pakai status="A"
+      const status = "A";
+      const qs = new URLSearchParams({ term, status });
+
+      if(lastController) lastController.abort();
+      lastController = new AbortController();
+
+      const res = await fetch(`${API_URL}?${qs.toString()}`, {
+        signal: lastController.signal,
+        headers: { "Accept":"application/json" },
+      });
+
+      if(!res.ok) return render([]);
+      const data = await res.json();
+      render(data);
+    }
+
+    input.addEventListener("input", () => {
+      const term = input.value.trim();
+      if(term.length < 2) return hide();
+
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => search(term), 250);
+    });
+
+    input.addEventListener("keydown", (e) => {
+      if(box.style.display === "none") return;
+
+      const max = items.length - 1;
+
+      if(e.key === "ArrowDown"){
+        e.preventDefault();
+        if(!items.length) return;
+        const next = activeIndex < max ? activeIndex + 1 : 0;
+        setActive(next);
+      } else if(e.key === "ArrowUp"){
+        e.preventDefault();
+        if(!items.length) return;
+        const prev = activeIndex > 0 ? activeIndex - 1 : max;
+        setActive(prev);
+      } else if(e.key === "Enter"){
+        if(activeIndex >= 0 && items[activeIndex]){
+          e.preventDefault();
+          pick(items[activeIndex]);
+        }
+      } else if(e.key === "Escape"){
+        hide();
+      }
+    });
+
+    box.addEventListener("click", (e) => {
+      const row = e.target.closest(".typeahead-item");
+      if(!row) return;
+      const idx = Number(row.dataset.idx);
+      if(Number.isFinite(idx) && items[idx]) pick(items[idx]);
+    });
+
+    document.addEventListener("click", (e) => {
+      if(e.target === input || box.contains(e.target)) return;
+      hide();
+    });
+
+    input.addEventListener("blur", () => {
+      setTimeout(() => {
+        if(!box.contains(document.activeElement)) hide();
+      }, 150);
+    });
+  })();
+</script>
 @endpush

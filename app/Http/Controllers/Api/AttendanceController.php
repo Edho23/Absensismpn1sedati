@@ -197,5 +197,6 @@ class AttendanceController extends Controller
                 'detail' => config('app.env') !== 'production' ? $e->getMessage() : null,
             ], 500);
         }
+        
     }
 }

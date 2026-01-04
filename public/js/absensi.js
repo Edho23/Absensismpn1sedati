@@ -1,86 +1,142 @@
-// public/js/absensi.js
-(function () {
-  var input = document.getElementById('field-nis');
-  var list  = document.getElementById('nis-suggest');
-  if (!input || !list) return;
+(function(){
+  const input = document.getElementById('field-nis');
+  const box   = document.getElementById('nis-suggest');
+  if(!input || !box) return;
 
-  var timer = null;
-  var lastTerm = '';
-
-  function hideList(){
-    list.style.display = 'none';
-    list.innerHTML = '';
+  const API_URL = window.__ABSENSI__?.siswaSearchUrl;
+  if(!API_URL){
+    console.error("siswaSearchUrl belum di-inject dari blade.");
+    return;
   }
 
-  function showLoading(){
-    list.innerHTML =
-      '<div class="typeahead-item" style="justify-content:center;color:#6b7280">Mencari…</div>';
-    list.style.display = 'block';
+  let items = [];
+  let activeIndex = -1;
+  let lastController = null;
+  let debounceTimer = null;
+
+  function escHtml(str){
+    return String(str)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
   }
 
-  function render(items){
-    if (!items || !items.length){
-      list.innerHTML =
-        '<div class="typeahead-item" style="justify-content:center;color:#6b7280">Tidak ada hasil</div>';
-      list.style.display = 'block';
+  function hide(){
+    box.style.display = "none";
+    box.innerHTML = "";
+    items = [];
+    activeIndex = -1;
+  }
+
+  function show(){ box.style.display = "block"; }
+
+  function render(list){
+    items = list || [];
+    activeIndex = -1;
+
+    if(!items.length){
+      box.innerHTML = `<div class="typeahead-item" style="cursor:default;">
+        <span class="typeahead-nama">Tidak ditemukan</span>
+      </div>`;
+      show();
       return;
     }
-    list.innerHTML = items.map(function(x){
-      return '<div class="typeahead-item" data-nis="'+x.nis+'">' +
-               '<div>' +
-                 '<div class="typeahead-nis">'+x.nis+'</div>' +
-                 '<div class="typeahead-nama">'+x.nama+'</div>' +
-               '</div>' +
-               '<div class="typeahead-kelas">'+x.kelas+'</div>' +
-             '</div>';
-    }).join('');
-    list.style.display = 'block';
 
-    Array.prototype.forEach.call(list.querySelectorAll('.typeahead-item'), function(el){
-      el.addEventListener('click', function(){
-        var nis = this.getAttribute('data-nis');
-        if (!nis) return;
-        input.value = nis;
-        hideList();
-        input.focus();
-      });
+    box.innerHTML = items.map((it, idx) => `
+      <div class="typeahead-item" data-idx="${idx}">
+        <div>
+          <div>
+            <span class="typeahead-nis">${escHtml(it.nis)}</span>
+            <span class="typeahead-nama"> — ${escHtml(it.nama)}</span>
+          </div>
+          <div class="typeahead-kelas">${escHtml(it.kelas || "-")}</div>
+        </div>
+      </div>
+    `).join("");
+
+    show();
+  }
+
+  function setActive(idx){
+    activeIndex = idx;
+    const rows = box.querySelectorAll(".typeahead-item");
+    rows.forEach(r => r.style.background = "");
+    if(rows[activeIndex]) rows[activeIndex].style.background = "#f3f4f6";
+  }
+
+  function pick(it){
+    input.value = it.nis; // INPUT MANUAL: isi field nis dengan NIS
+    hide();
+  }
+
+  async function search(term){
+    // kalau controller search kamu butuh status, pakai seperti edit:
+    // const status = "A";
+    // const qs = new URLSearchParams({ term, status });
+
+    const qs = new URLSearchParams({ term });
+
+    if(lastController) lastController.abort();
+    lastController = new AbortController();
+
+    const res = await fetch(`${API_URL}?${qs.toString()}`, {
+      signal: lastController.signal,
+      headers: { "Accept":"application/json" },
     });
+
+    if(!res.ok) return render([]);
+    const data = await res.json();
+    render(data);
   }
 
-  function search(term){
-    var url = '/siswa/search?term=' + encodeURIComponent(term);
-    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } })
-      .then(function(res){
-        if (!res.ok){
-          console.error('Search failed', res.status, res.statusText);
-          hideList();
-          return [];
-        }
-        return res.json();
-      })
-      .then(render)
-      .catch(function(err){
-        console.error('Search error', err);
-        hideList();
-      });
-  }
+  input.addEventListener("input", () => {
+    const term = input.value.trim();
+    if(term.length < 2) return hide();
 
-  input.addEventListener('input', function(){
-    var term = (this.value||'').trim();
-    if (term === lastTerm) return;
-    lastTerm = term;
-    clearTimeout(timer);
-
-    if (term.length < 2){ hideList(); return; }
-
-    showLoading();
-    timer = setTimeout(function(){ search(term); }, 200);
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => search(term), 250);
   });
 
-  document.addEventListener('click', function(e){
-    if (!list.contains(e.target) && e.target !== input){ hideList(); }
+  input.addEventListener("keydown", (e) => {
+    if(box.style.display === "none") return;
+
+    const max = items.length - 1;
+
+    if(e.key === "ArrowDown"){
+      e.preventDefault();
+      if(!items.length) return;
+      setActive(activeIndex < max ? activeIndex + 1 : 0);
+    } else if(e.key === "ArrowUp"){
+      e.preventDefault();
+      if(!items.length) return;
+      setActive(activeIndex > 0 ? activeIndex - 1 : max);
+    } else if(e.key === "Enter"){
+      if(activeIndex >= 0 && items[activeIndex]){
+        e.preventDefault();
+        pick(items[activeIndex]);
+      }
+    } else if(e.key === "Escape"){
+      hide();
+    }
   });
-  input.addEventListener('keydown', function(e){
-    if (e.key === 'Escape'){ hideList(); }
+
+  box.addEventListener("click", (e) => {
+    const row = e.target.closest(".typeahead-item");
+    if(!row) return;
+    const idx = Number(row.dataset.idx);
+    if(Number.isFinite(idx) && items[idx]) pick(items[idx]);
+  });
+
+  document.addEventListener("click", (e) => {
+    if(e.target === input || box.contains(e.target)) return;
+    hide();
+  });
+
+  input.addEventListener("blur", () => {
+    setTimeout(() => {
+      if(!box.contains(document.activeElement)) hide();
+    }, 150);
   });
 })();

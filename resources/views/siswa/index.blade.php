@@ -15,12 +15,21 @@
       </small>
     </div>
 
-    {{-- Tombol: Naikkan Kelas Otomatis --}}
-    <button type="button" class="btn btn-warning rounded-pill btn-sm d-flex align-items-center gap-1"
-            data-bs-toggle="modal" data-bs-target="#promoteModal">
-      <i class="bi bi-arrow-up-right-circle"></i>
-      <span>Naikkan Kelas Otomatis</span>
-    </button>
+    <div class="d-flex gap-2 flex-wrap">
+      {{-- Import CSV --}}
+      <button type="button" class="btn btn-outline-primary rounded-pill btn-sm d-flex align-items-center gap-1"
+              data-bs-toggle="modal" data-bs-target="#importCsvModal">
+        <i class="bi bi-upload"></i>
+        <span>Import CSV</span>
+      </button>
+
+      {{-- Tombol: Naikkan Kelas Otomatis --}}
+      <button type="button" class="btn btn-warning rounded-pill btn-sm d-flex align-items-center gap-1"
+              data-bs-toggle="modal" data-bs-target="#promoteModal">
+        <i class="bi bi-arrow-up-right-circle"></i>
+        <span>Naikkan Kelas Otomatis</span>
+      </button>
+    </div>
   </div>
 
   {{-- ===================== FORM TAMBAH SISWA ===================== --}}
@@ -40,42 +49,42 @@
       <form action="{{ route('siswa.store') }}" method="POST" class="row g-3 align-items-end" id="form-add-siswa">
         @csrf
 
-        {{-- Baris 1: NIS, Nama, Angkatan --}}
+        {{-- Baris 1 --}}
         <div class="col-lg-2">
           <label class="form-label fw-semibold small text-secondary">NIS</label>
           <input type="text" name="nis" class="form-control form-control-sm" placeholder="NIS" required>
         </div>
+
         <div class="col-lg-4">
           <label class="form-label fw-semibold small text-secondary">Nama</label>
           <input type="text" name="nama" class="form-control form-control-sm" placeholder="Nama lengkap" required>
         </div>
+
         <div class="col-lg-2">
           <label class="form-label fw-semibold small text-secondary">Angkatan</label>
-          <input type="number" name="angkatan" class="form-control form-control-sm"
-                 min="2000" max="2100" placeholder="Tahun">
+          <input type="number" name="angkatan" class="form-control form-control-sm" min="2000" max="2100" placeholder="Tahun">
         </div>
 
-        {{-- Baris 2: Paralel, Kelas, Gender, Status --}}
-        <div class="col-lg-2">
-          <label class="form-label fw-semibold small text-secondary">Kelas Paralel</label>
-          <select class="form-select form-select-sm" id="add-paralel" name="kelas_paralel" required>
-            <option value="">— Pilih Paralel —</option>
-            @foreach($daftarParalel as $p)
-              <option value="{{ $p }}">{{ $p }}</option>
-            @endforeach
-          </select>
-        </div>
-
+        {{-- Baris 2: Kelas hanya VII/VIII/IX + Paralel --}}
         <div class="col-lg-2">
           <label class="form-label fw-semibold small text-secondary">Kelas</label>
-          {{-- hanya VII / VIII / IX --}}
-          <select name="nama_kelas" class="form-select form-select-sm" id="add-kelas" required>
+          <select class="form-select form-select-sm" id="add-grade" required>
             <option value="">— Pilih Kelas —</option>
             @foreach($grades as $g)
               <option value="{{ $g }}">{{ $g }}</option>
             @endforeach
           </select>
         </div>
+
+        <div class="col-lg-2">
+          <label class="form-label fw-semibold small text-secondary">Kelas Paralel</label>
+          <select class="form-select form-select-sm" id="add-paralel" required>
+            <option value="">— Pilih Paralel —</option>
+          </select>
+        </div>
+
+        {{-- yang benar dikirim ke backend --}}
+        <input type="hidden" name="kelas_id" id="add-kelas-id" value="">
 
         <div class="col-lg-1">
           <label class="form-label fw-semibold small text-secondary">Gender</label>
@@ -95,7 +104,7 @@
         </div>
 
         <div class="col-12 text-end">
-          <button class="btn btn-primary btn-sm rounded-pill px-4">
+          <button class="btn btn-primary btn-sm rounded-pill px-4" type="submit">
             <i class="bi bi-save me-1"></i>Simpan
           </button>
         </div>
@@ -112,25 +121,23 @@
             <i class="bi bi-funnel me-2"></i>Filter & Pencarian
           </h6>
           <small class="text-muted">
-            Cari siswa berdasarkan NIS/nama, <strong>kelas (VII/VIII/IX)</strong>, paralel, gender, angkatan, dan status.
+            Cari siswa berdasarkan NIS/nama, kelas (VII/VIII/IX), paralel, gender, angkatan, dan status.
           </small>
         </div>
       </div>
 
       <form method="GET" action="{{ route('siswa.index') }}" class="row g-3 align-items-end" id="filter-form" autocomplete="off">
-        {{-- Pencarian + typeahead --}}
         <div class="col-lg-4 position-relative">
           <label class="form-label fw-semibold small text-secondary">Cari NIS/Nama</label>
           <input type="text"
-                 class="form-control form-control-sm"
-                 name="q"
-                 id="q"
-                 value="{{ $filters['q'] ?? '' }}"
-                 placeholder="Ketik NIS atau Nama...">
+                class="form-control form-control-sm"
+                name="q"
+                id="q"
+                value="{{ $filters['q'] ?? '' }}"
+                placeholder="Ketik NIS atau Nama...">
           <div id="q-suggest" class="typeahead-list" style="display:none;"></div>
         </div>
 
-        {{-- Kelas (VII/VIII/IX) --}}
         <div class="col-lg-2">
           <label class="form-label fw-semibold small text-secondary">Kelas</label>
           <select name="nama_kelas" class="form-select form-select-sm" id="filter-grade">
@@ -143,16 +150,13 @@
           </select>
         </div>
 
-        {{-- Kelas Paralel: terisi dinamis setelah pilih Kelas --}}
         <div class="col-lg-2">
           <label class="form-label fw-semibold small text-secondary">Kelas Paralel</label>
           <select name="kelas_paralel" class="form-select form-select-sm" id="filter-paralel">
             <option value="">— Semua —</option>
-            {{-- opsi akan diisi via JS --}}
           </select>
         </div>
 
-        {{-- Gender --}}
         <div class="col-lg-2">
           <label class="form-label fw-semibold small text-secondary">Gender</label>
           <select name="gender" class="form-select form-select-sm">
@@ -162,18 +166,16 @@
           </select>
         </div>
 
-        {{-- Angkatan --}}
         <div class="col-lg-2">
           <label class="form-label fw-semibold small text-secondary">Angkatan</label>
           <input type="number"
-                 name="angkatan"
-                 class="form-control form-control-sm"
-                 min="2000" max="2100"
-                 value="{{ $filters['angkatan'] ?? '' }}"
-                 placeholder="Tahun">
+                name="angkatan"
+                class="form-control form-control-sm"
+                min="2000" max="2100"
+                value="{{ $filters['angkatan'] ?? '' }}"
+                placeholder="Tahun">
         </div>
 
-        {{-- Status --}}
         <div class="col-lg-2">
           <label class="form-label fw-semibold small text-secondary">Status</label>
           <select name="status" class="form-select form-select-sm">
@@ -213,136 +215,198 @@
 
     <div class="card-body table-responsive px-4 pb-3">
 
-      {{-- FORM BULK DELETE --}}
-      <form id="bulkDeleteForm" action="{{ route('siswa.bulk-destroy') }}" method="POST">
+      {{-- FORM BULK DELETE (tidak membungkus table/edit form, biar tidak nested) --}}
+      <form id="bulkDeleteForm" action="{{ route('siswa.bulk-destroy') }}" method="POST" class="d-none">
         @csrf
         @method('DELETE')
-
-        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-          <div class="small text-muted">
-            Menampilkan {{ $siswa->firstItem() }}–{{ $siswa->lastItem() }} dari {{ $siswa->total() }} siswa
-          </div>
-          <button type="button" id="btnBulkDelete" class="btn btn-sm btn-outline-danger rounded-pill d-flex align-items-center gap-1">
-            <i class="bi bi-trash"></i>
-            <span>Hapus Terpilih</span>
-          </button>
-        </div>
-
-        <table class="table table-hover align-middle text-center mb-0">
-          <thead class="table-light small">
-            <tr>
-              <th><input type="checkbox" id="check-all"></th>
-              <th>No</th>
-              <th>NIS</th>
-              <th>Nama</th>
-              <th>Gender</th>
-              <th>Kelas</th>
-              <th>Angkatan</th>
-              <th>Status</th>
-              <th style="width:110px">Aksi</th>
-            </tr>
-          </thead>
-          <tbody class="small">
-          @forelse($siswa as $i => $s)
-            <tr>
-              <td><input type="checkbox" class="check-item" name="ids[]" value="{{ $s->id }}"></td>
-              <td>{{ $siswa->firstItem() + $i }}</td>
-              <td>{{ $s->nis }}</td>
-              <td class="text-start">{{ $s->nama }}</td>
-              <td>{{ $s->gender ?: '-' }}</td>
-              <td>{{ $s->kelas->nama_kelas ?? '-' }} - {{ $s->kelas->kelas_paralel ?? '-' }}</td>
-              <td>{{ $s->angkatan ?? '-' }}</td>
-              <td>
-                <span class="badge {{ ($s->status ?? 'A') === 'A' ? 'bg-success' : 'bg-secondary' }}">
-                  {{ ($s->status ?? 'A') === 'A' ? 'A (Aktif)' : 'N (Nonaktif)' }}
-                </span>
-              </td>
-              <td class="d-flex gap-2 justify-content-center">
-                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#edit-{{ $s->id }}">
-                  <i class="bi bi-pencil-square"></i>
-                </button>
-              </td>
-            </tr>
-
-            {{-- Row edit --}}
-            <tr class="collapse" id="edit-{{ $s->id }}">
-              <td colspan="9" class="bg-light-subtle">
-                <form action="{{ route('siswa.update', $s->id) }}" method="POST"
-                      class="row g-2 align-items-end form-edit" data-nama="{{ $s->nama }}">
-                  @csrf @method('PUT')
-                  <div class="col-md-2">
-                    <label class="form-label small text-secondary">NIS</label>
-                    <input type="text" name="nis" class="form-control form-control-sm" value="{{ $s->nis }}" required>
-                  </div>
-                  <div class="col-md-4">
-                    <label class="form-label small text-secondary">Nama</label>
-                    <input type="text" name="nama" class="form-control form-control-sm" value="{{ $s->nama }}" required>
-                  </div>
-                  <div class="col-md-2">
-                    <label class="form-label small text-secondary">Angkatan</label>
-                    <input type="number" name="angkatan" class="form-control form-control-sm" min="2000" max="2100" value="{{ $s->angkatan }}">
-                  </div>
-
-                  <div class="col-md-2">
-                    <label class="form-label small text-secondary d-block">Paralel</label>
-                    <select class="form-select form-select-sm paralel-edit" data-target="#kelas-{{ $s->id }}">
-                      <option value="">— Semua —</option>
-                      @foreach($daftarParalel as $p)
-                        <option value="{{ $p }}">{{ $p }}</option>
-                      @endforeach
-                    </select>
-                  </div>
-
-                  <div class="col-md-3">
-                    <label class="form-label small text-secondary">Kelas</label>
-                    <select name="kelas_id" class="form-select form-select-sm" id="kelas-{{ $s->id }}" required>
-                      @foreach($kelas as $k)
-                        <option value="{{ $k->id }}" data-paralel="{{ $k->kelas_paralel }}"
-                          {{ (string)$s->kelas_id === (string)$k->id ? 'selected' : '' }}>
-                          {{ $k->nama_kelas }} - {{ $k->kelas_paralel }}
-                        </option>
-                      @endforeach
-                    </select>
-                  </div>
-
-                  <div class="col-md-1">
-                    <label class="form-label small text-secondary">Gender</label>
-                    <select name="gender" class="form-select form-select-sm">
-                      <option value="">—</option>
-                      <option value="L" {{ ($s->gender ?? '')==='L' ? 'selected' : '' }}>L</option>
-                      <option value="P" {{ ($s->gender ?? '')==='P' ? 'selected' : '' }}>P</option>
-                    </select>
-                  </div>
-
-                  <div class="col-md-1">
-                    <label class="form-label small text-secondary">Status</label>
-                    <select name="status" class="form-select form-select-sm">
-                      <option value="A" {{ ($s->status ?? 'A')==='A' ? 'selected' : '' }}>A</option>
-                      <option value="N" {{ ($s->status ?? 'N')==='N' ? 'selected' : '' }}>N</option>
-                    </select>
-                  </div>
-
-                  <div class="col-md-1 d-grid">
-                    <button type="button" class="btn btn-sm btn-success btn-confirm-edit">
-                      <i class="bi bi-save"></i>
-                    </button>
-                  </div>
-                </form>
-              </td>
-            </tr>
-          @empty
-            <tr>
-              <td colspan="9" class="text-muted py-3">Belum ada data siswa.</td>
-            </tr>
-          @endforelse
-          </tbody>
-        </table>
+        <div id="bulkHiddenIds"></div>
       </form>
 
-      {{-- Pagination --}}
+      <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+        <div class="small text-muted">
+          Menampilkan {{ $siswa->firstItem() }}–{{ $siswa->lastItem() }} dari {{ $siswa->total() }} siswa
+        </div>
+        <button type="button" id="btnBulkDelete" class="btn btn-sm btn-outline-danger rounded-pill d-flex align-items-center gap-1">
+          <i class="bi bi-trash"></i>
+          <span>Hapus Terpilih</span>
+        </button>
+      </div>
+
+      <table class="table table-hover align-middle text-center mb-0">
+        <thead class="table-light small">
+          <tr>
+            <th><input type="checkbox" id="check-all"></th>
+            <th>No</th>
+            <th>NIS</th>
+            <th>Nama</th>
+            <th>Gender</th>
+            <th>Kelas</th>
+            <th>Angkatan</th>
+            <th>Status</th>
+            <th style="width:110px">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="small">
+        @forelse($siswa as $i => $s)
+          <tr>
+            <td><input type="checkbox" class="check-item" value="{{ $s->id }}"></td>
+            <td>{{ $siswa->firstItem() + $i }}</td>
+            <td>{{ $s->nis }}</td>
+            <td class="text-start">{{ $s->nama }}</td>
+            <td>{{ $s->gender ?: '-' }}</td>
+            <td>{{ $s->kelas->nama_kelas ?? '-' }} - {{ $s->kelas->kelas_paralel ?? '-' }}</td>
+            <td>{{ $s->angkatan ?? '-' }}</td>
+            <td>
+              <span class="badge {{ ($s->status ?? 'A') === 'A' ? 'bg-success' : 'bg-secondary' }}">
+                {{ ($s->status ?? 'A') === 'A' ? 'A (Aktif)' : 'N (Nonaktif)' }}
+              </span>
+            </td>
+            <td class="d-flex gap-2 justify-content-center">
+              <button class="btn btn-sm btn-outline-primary" type="button"
+                      data-bs-toggle="collapse" data-bs-target="#edit-{{ $s->id }}">
+                <i class="bi bi-pencil-square"></i>
+              </button>
+            </td>
+          </tr>
+
+          @php
+            $curGrade   = $s->kelas->nama_kelas ?? '';
+            $curParalel = (string)($s->kelas->kelas_paralel ?? '');
+          @endphp
+
+          <tr class="collapse" id="edit-{{ $s->id }}">
+            <td colspan="9" class="bg-light-subtle">
+              <form action="{{ route('siswa.update', $s->id) }}" method="POST"
+                    class="row g-2 align-items-end form-edit"
+                    data-nama="{{ $s->nama }}"
+                    data-initial-grade="{{ $curGrade }}"
+                    data-initial-paralel="{{ $curParalel }}"
+                    data-row="{{ $s->id }}">
+                @csrf
+                @method('PUT')
+
+                <div class="col-md-2">
+                  <label class="form-label small text-secondary">NIS</label>
+                  <input type="text" name="nis" class="form-control form-control-sm" value="{{ $s->nis }}" required>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label small text-secondary">Nama</label>
+                  <input type="text" name="nama" class="form-control form-control-sm" value="{{ $s->nama }}" required>
+                </div>
+
+                <div class="col-md-2">
+                  <label class="form-label small text-secondary">Angkatan</label>
+                  <input type="number" name="angkatan" class="form-control form-control-sm" min="2000" max="2100" value="{{ $s->angkatan }}">
+                </div>
+
+                <div class="col-md-2">
+                  <label class="form-label small text-secondary d-block">Kelas</label>
+                  <select class="form-select form-select-sm grade-edit" data-row="{{ $s->id }}" required>
+                    <option value="">— Pilih Kelas —</option>
+                    @foreach($grades as $g)
+                      <option value="{{ $g }}" {{ $curGrade === $g ? 'selected' : '' }}>{{ $g }}</option>
+                    @endforeach
+                  </select>
+                </div>
+
+                <div class="col-md-2">
+                  <label class="form-label small text-secondary d-block">Paralel</label>
+                  <select class="form-select form-select-sm paralel-edit" data-row="{{ $s->id }}" required>
+                    <option value="">— Pilih Paralel —</option>
+                  </select>
+                </div>
+
+                <input type="hidden" name="kelas_id" id="kelas-id-{{ $s->id }}" value="{{ $s->kelas_id }}">
+
+                <div class="col-md-1">
+                  <label class="form-label small text-secondary">Gender</label>
+                  <select name="gender" class="form-select form-select-sm">
+                    <option value="">—</option>
+                    <option value="L" {{ ($s->gender ?? '')==='L' ? 'selected' : '' }}>L</option>
+                    <option value="P" {{ ($s->gender ?? '')==='P' ? 'selected' : '' }}>P</option>
+                  </select>
+                </div>
+
+                <div class="col-md-1">
+                  <label class="form-label small text-secondary">Status</label>
+                  <select name="status" class="form-select form-select-sm">
+                    <option value="A" {{ ($s->status ?? 'A')==='A' ? 'selected' : '' }}>A</option>
+                    <option value="N" {{ ($s->status ?? 'N')==='N' ? 'selected' : '' }}>N</option>
+                  </select>
+                </div>
+
+                <div class="col-md-1 d-grid">
+                  <button type="button" class="btn btn-sm btn-success btn-confirm-edit">
+                    <i class="bi bi-save"></i>
+                  </button>
+                </div>
+              </form>
+            </td>
+          </tr>
+        @empty
+          <tr>
+            <td colspan="9" class="text-muted py-3">Belum ada data siswa.</td>
+          </tr>
+        @endforelse
+        </tbody>
+      </table>
+
       <div class="mt-3 d-flex justify-content-center">
         {{ $siswa->links('pagination::bootstrap-5') }}
       </div>
+    </div>
+  </div>
+</div>
+
+{{-- ====== MODAL IMPORT CSV ====== --}}
+<div class="modal fade" id="importCsvModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">
+          <i class="bi bi-upload me-2"></i>Import Siswa dari CSV
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <form action="{{ route('siswa.import-csv') }}" method="POST" enctype="multipart/form-data">
+        @csrf
+        <div class="modal-body">
+          <div class="small text-muted mb-2">
+            Format kolom CSV: <code>nis,nama,angkatan,gender,status,nama_kelas,kelas_paralel</code><br>
+            Sistem akan mencari <b>kelas_id</b> otomatis dari tabel <b>kelas</b> berdasarkan <b>nama_kelas + kelas_paralel</b>.
+          </div>
+
+          <div class="mb-2">
+            <a href="{{ route('siswa.template-csv') }}" class="small">Unduh template CSV</a>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small text-secondary fw-semibold">File CSV</label>
+            <input type="file" name="file" class="form-control form-control-sm" accept=".csv,text/csv" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small text-secondary fw-semibold">Mode Import</label>
+            <select name="mode" class="form-select form-select-sm">
+              <option value="upsert" selected>Update jika NIS sudah ada (Upsert)</option>
+              <option value="insert_only">Hanya insert (kalau NIS sudah ada → skip)</option>
+            </select>
+          </div>
+
+          <div class="alert alert-warning py-2 mb-0 small">
+            Pastikan data kelas (VII/VIII/IX + paralel) sudah lengkap di tabel <b>kelas</b>, kalau tidak baris CSV akan ditolak.
+          </div>
+        </div>
+
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-cloud-arrow-up me-1"></i>Import
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
@@ -419,7 +483,6 @@
   </div>
 </div>
 
-{{-- ===== TOAST CONTAINER ===== --}}
 <div class="toast-container position-fixed top-0 end-0 p-3" id="toastArea" style="z-index: 1080;"></div>
 
 @push('styles')
@@ -435,7 +498,6 @@
   .typeahead-nama{ color:#374151 }
   .typeahead-kelas{ color:#6b7280; font-size:12.5px }
 
-  /* ==== OVERRIDE KHUSUS HALAMAN SISWA ==== */
   .siswa-page { font-size: 15px; }
   .siswa-page .card .card-body,
   .siswa-page .card .card-header { font-size: 15px; }
@@ -448,14 +510,12 @@
   }
 
   .siswa-page .btn-sm { font-size: 0.95rem; }
-
   .siswa-page .table { font-size: 14.5px; }
   .siswa-page .table th, .siswa-page .table td {
     vertical-align: middle !important;
     padding-top: 10px !important;
     padding-bottom: 10px !important;
   }
-
   .siswa-page .badge { font-size: 0.8rem; }
   .siswa-page .pagination .page-link { font-size: 0.95rem; border-radius: 8px; }
 </style>
@@ -476,8 +536,8 @@ function makeToast(title, message, type){
       <small>baru saja</small>
       <button type="button" class="btn-close ${bg.includes('text-white')?'btn-close-white':''}" data-bs-dismiss="toast"></button>
     </div>
-    <div class="toast-body">${message}</div>`;
-  toastArea.appendChild(el); new bootstrap.Toast(el, { delay: 3500, autohide: true }).show();
+    <div class="toast-body">${(message ?? '').toString().replace(/\n/g,'<br>')}</div>`;
+  toastArea.appendChild(el); new bootstrap.Toast(el, { delay: 4500, autohide: true }).show();
 }
 
 /** ========= Render session & error sebagai toast ========= */
@@ -524,23 +584,58 @@ document.addEventListener('click', (ev) => {
   if(!listEl.contains(ev.target) && ev.target !== qInput){ hideSuggest(); }
 });
 
-/** ====== Filter dinamis (row edit) by paralel ====== */
-document.querySelectorAll('.paralel-edit').forEach(sel => {
-  sel.addEventListener('change', () => {
-    const target = document.querySelector(sel.dataset.target);
-    const p = sel.value;
-    [...target.options].forEach(opt => {
-      if (!opt.value) return;
-      opt.hidden = !!p && (opt.dataset.paralel !== p);
-    });
-    if (target.selectedOptions.length && target.selectedOptions[0].hidden) target.value = '';
+/** ====== MAPS dari controller ====== */
+const paralelMap = @json($paralelMap);
+const kelasIdMap = @json($kelasIdMap);
+
+/** ====== Helper build paralel options ====== */
+function buildParalelOptions(selectEl, grade, preselected=''){
+  selectEl.innerHTML = '';
+  const base = document.createElement('option');
+  base.value = '';
+  base.textContent = '— Pilih Paralel —';
+  selectEl.appendChild(base);
+
+  if(!grade || !paralelMap[grade]) return;
+
+  paralelMap[grade].forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = String(p);
+    opt.textContent = String(p);
+    if(preselected !== '' && String(preselected) === String(p)) opt.selected = true;
+    selectEl.appendChild(opt);
   });
+}
+
+/** ====== Helper set kelas_id ====== */
+function setKelasId(hiddenEl, grade, paralel){
+  if(!hiddenEl) return;
+  const gid = (kelasIdMap?.[grade]?.[String(paralel)]) ?? '';
+  hiddenEl.value = gid;
+}
+
+/** ====== Tambah Siswa: grade + paralel -> kelas_id ====== */
+const addGrade   = document.getElementById('add-grade');
+const addParalel = document.getElementById('add-paralel');
+const addKelasId = document.getElementById('add-kelas-id');
+
+addGrade?.addEventListener('change', () => {
+  buildParalelOptions(addParalel, addGrade.value, '');
+  setKelasId(addKelasId, addGrade.value, addParalel.value);
+});
+addParalel?.addEventListener('change', () => {
+  setKelasId(addKelasId, addGrade.value, addParalel.value);
+});
+document.getElementById('form-add-siswa')?.addEventListener('submit', (e) => {
+  if(!addKelasId.value){
+    e.preventDefault();
+    makeToast('Perhatian', 'Pilih Kelas dan Paralel terlebih dahulu.', 'warning');
+  }
 });
 
-/** ====== Filter KELAS (FILTER SECTION) grade -> paralel dinamis ====== */
+/** ====== Filter section: grade -> paralel dinamis ====== */
 const filterGrade    = document.getElementById('filter-grade');
 const filterParalel  = document.getElementById('filter-paralel');
-const paralelMap     = @json($paralelMap);
 const initialGrade   = @json($filters['nama_kelas'] ?? '');
 const initialParalel = @json($filters['kelas_paralel'] ?? '');
 
@@ -557,25 +652,51 @@ function rebuildFilterParalel(preselected){
 
   paralelMap[g].forEach(p => {
     const opt = document.createElement('option');
-    opt.value = p;
-    opt.textContent = p;
-    if (preselected && preselected === p) {
-      opt.selected = true;
-    }
+    opt.value = String(p);
+    opt.textContent = String(p);
+    if (preselected && String(preselected) === String(p)) opt.selected = true;
     filterParalel.appendChild(opt);
   });
 }
-
 if (filterGrade) {
-  if (initialGrade) {
-    filterGrade.value = initialGrade;
-  }
+  if (initialGrade) filterGrade.value = initialGrade;
   rebuildFilterParalel(initialParalel);
+  filterGrade.addEventListener('change', () => rebuildFilterParalel(''));
+}
 
-  filterGrade.addEventListener('change', () => {
-    rebuildFilterParalel('');
+/** ====== Edit row: init paralel sesuai data awal + sync kelas_id ====== */
+function initEditRows(){
+  document.querySelectorAll('form.form-edit').forEach(form => {
+    const rowId = form.dataset.row;
+    const gradeSel = form.querySelector(`.grade-edit[data-row="${rowId}"]`);
+    const paralelSel = form.querySelector(`.paralel-edit[data-row="${rowId}"]`);
+    const hiddenId = document.getElementById(`kelas-id-${rowId}`);
+
+    const initGrade = form.dataset.initialGrade || '';
+    const initParalel = form.dataset.initialParalel || '';
+
+    if(gradeSel && initGrade) gradeSel.value = initGrade;
+    if(paralelSel) buildParalelOptions(paralelSel, gradeSel?.value || initGrade, initParalel);
+    setKelasId(hiddenId, gradeSel?.value || initGrade, paralelSel?.value || initParalel);
+
+    gradeSel?.addEventListener('change', () => {
+      buildParalelOptions(paralelSel, gradeSel.value, '');
+      setKelasId(hiddenId, gradeSel.value, paralelSel.value);
+    });
+
+    paralelSel?.addEventListener('change', () => {
+      setKelasId(hiddenId, gradeSel.value, paralelSel.value);
+    });
+
+    form.addEventListener('submit', (e) => {
+      if(!hiddenId.value){
+        e.preventDefault();
+        makeToast('Perhatian', 'Pilih Kelas dan Paralel yang valid.', 'warning');
+      }
+    });
   });
 }
+initEditRows();
 
 /** ====== Konfirmasi EDIT ====== */
 const modalEdit = new bootstrap.Modal(document.getElementById('modalConfirmEdit'));
@@ -588,44 +709,66 @@ document.querySelectorAll('.form-edit .btn-confirm-edit').forEach(btn => {
     modalEdit.show();
   });
 });
-document.getElementById('btnEditGo').addEventListener('click', function () { if (formToEdit) formToEdit.submit(); });
+document.getElementById('btnEditGo')?.addEventListener('click', function () {
+  if (formToEdit) formToEdit.submit();
+});
 
-/** ====== BULK DELETE ====== */
+/** ====== BULK DELETE (tanpa nested form) ====== */
 const bulkForm        = document.getElementById('bulkDeleteForm');
+const bulkHidden      = document.getElementById('bulkHiddenIds');
 const btnBulkDelete   = document.getElementById('btnBulkDelete');
 const checkAll        = document.getElementById('check-all');
-const checkItems      = document.querySelectorAll('.check-item');
 const modalDelete     = new bootstrap.Modal(document.getElementById('modalConfirmDelete'));
 const spanDeleteCount = document.getElementById('deleteCount');
 
+function getCheckedIds(){
+  return [...document.querySelectorAll('.check-item:checked')].map(cb => cb.value);
+}
 function updateCheckAllState(){
-  const total = checkItems.length;
+  const items = document.querySelectorAll('.check-item');
+  const total = items.length;
   const checked = document.querySelectorAll('.check-item:checked').length;
   if (!total) { checkAll.checked = false; checkAll.indeterminate = false; return; }
   checkAll.checked = (checked === total);
   checkAll.indeterminate = (checked > 0 && checked < total);
 }
 checkAll?.addEventListener('change', function(){
-  checkItems.forEach(cb => { cb.checked = checkAll.checked; });
+  document.querySelectorAll('.check-item').forEach(cb => { cb.checked = checkAll.checked; });
   updateCheckAllState();
 });
-checkItems.forEach(cb => { cb.addEventListener('change', updateCheckAllState); });
+document.querySelectorAll('.check-item').forEach(cb => cb.addEventListener('change', updateCheckAllState));
+
 btnBulkDelete?.addEventListener('click', function(){
-  const checked = document.querySelectorAll('.check-item:checked');
-  if (!checked.length) {
+  const ids = getCheckedIds();
+  if (!ids.length) {
     makeToast('Perhatian', 'Pilih minimal satu siswa terlebih dahulu.', 'warning');
     return;
   }
-  spanDeleteCount.textContent = checked.length;
+  spanDeleteCount.textContent = ids.length;
   modalDelete.show();
 });
-document.getElementById('btnDeleteGo').addEventListener('click', function(){
-  if (bulkForm) bulkForm.submit();
+
+document.getElementById('btnDeleteGo')?.addEventListener('click', function(){
+  const ids = getCheckedIds();
+  if (!ids.length) {
+    makeToast('Perhatian', 'Tidak ada siswa yang dipilih untuk dihapus.', 'warning');
+    return;
+  }
+
+  // inject hidden input ids[]
+  bulkHidden.innerHTML = '';
+  ids.forEach(id => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'ids[]';
+    input.value = id;
+    bulkHidden.appendChild(input);
+  });
+
+  bulkForm.submit();
 });
 
-/** Init awal **/
 updateCheckAllState();
 </script>
 @endpush
-
 @endsection

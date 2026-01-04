@@ -18,7 +18,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     {{-- Custom Global CSS (semua styling dipusatkan di sini) --}}
-    <link rel="stylesheet" href="/css/app.css">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+
 
     @stack('styles')
 </head>
@@ -39,7 +40,8 @@
     {{-- JS Library --}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="/js/app.js"></script>
+    <script src="{{ asset('js/app.js') }}"></script>
+
 
     @stack('scripts')
 </body>

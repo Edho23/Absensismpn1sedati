@@ -8,9 +8,6 @@
         <h3 class="fw-bold text-primary mb-0">
             <i class="bi bi-clock-history me-2"></i> Edit Data Presensi
         </h3>
-        <a href="{{ route('absensi.index') }}" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm">
-            <i class="bi bi-arrow-left"></i> Kembali
-        </a>
     </div>
 
     @if(session('ok'))
@@ -86,9 +83,6 @@
                            placeholder="mis. 2210 / Budi"
                            autocomplete="off">
                     <div id="q-suggest" class="typeahead-list" style="display:none;"></div>
-                    <small class="text-muted d-block mt-1">
-                        Ketik min. 2 huruf. Klik saran untuk mengisi NIS otomatis.
-                    </small>
                 </div>
 
                 <div class="col-12 d-flex gap-2 mt-2">
@@ -106,9 +100,9 @@
     {{-- CARD TABLE --}}
     <div class="card border-0 shadow-sm rounded-4">
 
-        {{-- BULK ACTION BAR (FORM BULK TIDAK MEMBUNGKUS TABLE) --}}
-        <div class="card-header bg-white d-flex align-items-center justify-content-between">
-            <form method="POST" action="{{ route('absensi.bulk') }}" id="bulkForm" class="d-flex align-items-center gap-2">
+        {{-- BULK ACTION BAR --}}
+        <div class="card-header bg-white d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <form method="POST" action="{{ route('absensi.bulk') }}" id="bulkForm" class="d-flex align-items-center gap-2 flex-wrap">
                 @csrf
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="checkAll">
@@ -148,15 +142,17 @@
                             <th>Jam Pulang</th>
                             <th>Status</th>
                             <th>Catatan</th>
-                            <th>Aksi</th>
+                            <th style="width:140px">Aksi</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         @forelse($absensi as $a)
+                            @php
+                              $rowFormId = 'row-form-'.$a->id;
+                            @endphp
                             <tr>
                                 <td>
-                                    {{-- Checkbox bulk: jangan pakai name="ids[]" karena kita inject via JS --}}
                                     <input type="checkbox" value="{{ $a->id }}" class="row-check">
                                 </td>
 
@@ -166,32 +162,44 @@
                                 <td>{{ $a->jam_masuk ? \Carbon\Carbon::parse($a->jam_masuk)->format('H:i') : '-' }}</td>
                                 <td>{{ $a->jam_pulang ? \Carbon\Carbon::parse($a->jam_pulang)->format('H:i') : '-' }}</td>
 
-                                {{-- SATU FORM UPDATE PER BARIS (STATUS + CATATAN) --}}
+                                {{-- STATUS (diikat ke form hidden lewat atribut form="...") --}}
                                 <td>
-                                    <form action="{{ route('absensi.update', $a->id) }}" method="POST" class="d-flex align-items-center justify-content-center gap-2">
+                                    <select name="status_harian"
+                                            class="form-select form-select-sm rounded-pill"
+                                            style="min-width:120px"
+                                            form="{{ $rowFormId }}">
+                                        @foreach (['HADIR','SAKIT','IZIN','ALPA'] as $st)
+                                            <option value="{{ $st }}" {{ $a->status_harian===$st ? 'selected':'' }}>{{ $st }}</option>
+                                        @endforeach
+                                    </select>
+                                </td>
+
+                                {{-- CATATAN --}}
+                                <td>
+                                    <input type="text"
+                                           name="catatan"
+                                           value="{{ $a->catatan }}"
+                                           class="form-control form-control-sm"
+                                           placeholder="Catatan..."
+                                           form="{{ $rowFormId }}">
+                                </td>
+
+                                {{-- AKSI --}}
+                                <td class="d-flex justify-content-center gap-2">
+                                    {{-- FORM UPDATE (TIDAK NYEBRANG TD) --}}
+                                    <form id="{{ $rowFormId }}" action="{{ route('absensi.update', $a->id) }}" method="POST" class="d-inline">
                                         @csrf
                                         @method('PUT')
-                                        <select name="status_harian" class="form-select form-select-sm rounded-pill" style="min-width:120px">
-                                            @foreach (['HADIR','SAKIT','IZIN','ALPA'] as $st)
-                                                <option value="{{ $st }}" {{ $a->status_harian===$st ? 'selected':'' }}>{{ $st }}</option>
-                                            @endforeach
-                                        </select>
-                                </td>
-
-                                <td>
-                                        <input type="text" name="catatan" value="{{ $a->catatan }}" class="form-control form-control-sm" placeholder="Catatan...">
-                                </td>
-
-                                <td class="d-flex justify-content-center gap-2">
-                                        <button class="btn btn-sm btn-outline-primary rounded-pill">
+                                        <button class="btn btn-sm btn-outline-primary rounded-pill" type="submit">
                                             Simpan
                                         </button>
                                     </form>
 
+                                    {{-- FORM DELETE --}}
                                     <form action="{{ route('absensi.destroy', $a->id) }}" method="POST" onsubmit="return confirm('Hapus baris ini?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button class="btn btn-sm btn-outline-danger rounded-pill">
+                                        <button class="btn btn-sm btn-outline-danger rounded-pill" type="submit">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
@@ -204,8 +212,9 @@
                 </table>
             </div>
 
+            {{-- PAGINATION (Bootstrap + query filter kebawa) --}}
             <div class="mt-3 d-flex justify-content-center">
-                {{ $absensi->links() }}
+                {{ $absensi->appends(request()->query())->links('pagination::bootstrap-5') }}
             </div>
         </div>
     </div>
@@ -232,7 +241,7 @@
 
 @push('scripts')
 <script>
-  // ============ BULK (kode kamu) ============
+  // ============ BULK ============
   document.getElementById('checkAll')?.addEventListener('change', function(e){
       document.querySelectorAll('.row-check').forEach(cb => cb.checked = e.target.checked);
   });
@@ -257,7 +266,7 @@
       });
   });
 
-  // ============ TYPEAHEAD FILTER Q (BARU) ============
+  // ============ TYPEAHEAD FILTER Q ============
   (function(){
     const input = document.getElementById('field-q');
     const box   = document.getElementById('q-suggest');
@@ -322,13 +331,11 @@
     }
 
     function pick(it){
-      // untuk filter GET, kita isi q dengan NIS agar konsisten
-      input.value = it.nis;
+      input.value = it.nis; // untuk filter GET, isi q = NIS
       hide();
     }
 
     async function search(term){
-      // default cari siswa aktif
       const status = "A";
       const qs = new URLSearchParams({ term, status });
 

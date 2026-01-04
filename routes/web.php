@@ -73,6 +73,14 @@ Route::middleware([
         ->name('absensi.destroy');
 
     // ===== DATA MASTER =====
+    Route::delete('/siswa/bulk-destroy', [SiswaController::class, 'bulkDestroy'])
+    ->name('siswa.bulk-destroy');
+    
+    Route::post('/siswa/import-csv', [SiswaController::class, 'importCsv'])
+    ->name('siswa.import-csv');
+
+    Route::get('/siswa/template-csv', [SiswaController::class, 'downloadTemplateCsv'])
+    ->name('siswa.template-csv');
     Route::resource('siswa', SiswaController::class)->only(['index','create','store','edit','update','destroy']);
     Route::post('/siswa/promote', [SiswaController::class, 'promote'])->name('siswa.promote');
 
@@ -83,8 +91,6 @@ Route::middleware([
 
     Route::resource('perangkat', PerangkatController::class)->only(['index','store','update','destroy']);
     
-    Route::delete('/siswa/bulk-destroy', [SiswaController::class, 'bulkDestroy'])
-        ->name('siswa.bulk-destroy');
 
     // ===== ENDPOINT TYPEAHEAD NIS/NAMA =====
     Route::get('/siswa/search', [SiswaController::class, 'search'])->name('siswa.search');
