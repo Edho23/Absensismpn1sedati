@@ -87,19 +87,39 @@
 
       <form action="{{ route('admin.login') }}" method="POST">
           @csrf
+
           <div class="mb-3 text-start">
             <label class="form-label fw-semibold">Username</label>
-            <input type="text" name="username" class="form-control" required>
+            <input
+              type="text"
+              name="username"
+              class="form-control"
+              value="{{ old('username') }}"
+              required
+            >
           </div>
 
-         <div class="mb-4 text-start">
+          <div class="mb-3 text-start">
             <label class="form-label fw-semibold">Password</label>
-            <input type="password" name="password" class="form-control" required>
+            <input
+              type="password"
+              name="password"
+              class="form-control"
+              required
+            >
           </div>
-          <button type="submit" class="btn btn-login w-100 text-white">Masuk</button>
+
+          {{-- TEKS ERROR SAJA (MERAH) --}}
+          @if($errors->has('username'))
+            <div class="text-danger small text-start mb-3">
+              {{ $errors->first('username') }}
+            </div>
+          @endif
+
+          <button type="submit" class="btn btn-login w-100 text-white">
+            Masuk
+          </button>
       </form>
-
-
 
       <p class="mt-4 small text-muted">
         © {{ date('Y') }} SMPN 1 Sedati — Sistem Presensi
